@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer } from "http";
 import { storage } from "./storage";
 import { generateListing } from "./lib/openai";
-import { insertListingSchema, insertUserSchema } from "@shared/schema";
+import { insertListingSchema, insertUserSchema, SUBSCRIPTION_TIERS, SUBSCRIPTION_PRICES, ADD_ON_PRICES } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcrypt";
 import Stripe from "stripe";
@@ -14,17 +14,6 @@ if (!process.env.STRIPE_SECRET_KEY) {
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: "2023-10-16"
 });
-
-// Define subscription tiers and prices.  These would ideally come from a config file or database.
-const SUBSCRIPTION_TIERS = {
-  BASIC: "basic",
-  PREMIUM: "premium",
-};
-
-const SUBSCRIPTION_PRICES = {
-  [SUBSCRIPTION_TIERS.BASIC]: 0, // Free tier
-  [SUBSCRIPTION_TIERS.PREMIUM]: 2999, // $29.99
-};
 
 
 export async function registerRoutes(app: Express) {
@@ -110,11 +99,21 @@ export async function registerRoutes(app: Express) {
       }
 
       if (user.isPremium) {
-        return res.status(400).json({ message: "User is already premium" });
+        return res.status(400).json({ message: "User is already subscribed" });
       }
 
-      const { tier } = req.body;
-      const amount = SUBSCRIPTION_PRICES[tier] || SUBSCRIPTION_PRICES.BASIC;
+      const { tier, addOns = [] } = req.body;
+      if (!tier || !SUBSCRIPTION_PRICES[tier]) {
+        return res.status(400).json({ message: "Invalid subscription tier" });
+      }
+
+      // Calculate total amount including add-ons
+      let amount = SUBSCRIPTION_PRICES[tier];
+      addOns.forEach(addon => {
+        if (ADD_ON_PRICES[addon]) {
+          amount += ADD_ON_PRICES[addon];
+        }
+      });
 
       const paymentIntent = await stripe.paymentIntents.create({
         amount,
@@ -122,6 +121,7 @@ export async function registerRoutes(app: Express) {
         metadata: {
           userId: user.id.toString(),
           tier,
+          addOns: JSON.stringify(addOns)
         },
       });
 
@@ -146,7 +146,7 @@ export async function registerRoutes(app: Express) {
         sig,
         process.env.STRIPE_WEBHOOK_SECRET!
       );
-    } catch (err) {
+    } catch (err: any) {
       console.error("Webhook signature verification failed:", err);
       return res.status(400).send(`Webhook Error: ${err.message}`);
     }
@@ -155,9 +155,15 @@ export async function registerRoutes(app: Express) {
       const paymentIntent = event.data.object;
       const userId = parseInt(paymentIntent.metadata.userId);
       const tier = paymentIntent.metadata.tier || SUBSCRIPTION_TIERS.BASIC;
+      const addOns = JSON.parse(paymentIntent.metadata.addOns || "[]");
 
       try {
         await storage.upgradeToPremium(userId, tier);
+
+        // Enable add-ons if purchased
+        if (addOns.length > 0) {
+          await storage.updateUserAddOns(userId, addOns);
+        }
       } catch (error) {
         console.error("Error upgrading user to premium:", error);
         return res.status(500).json({ message: "Failed to upgrade user" });
