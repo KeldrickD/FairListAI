@@ -164,19 +164,25 @@ export async function registerRoutes(app: Express) {
     if (event.type === "payment_intent.succeeded") {
       const paymentIntent = event.data.object;
       const userId = parseInt(paymentIntent.metadata.userId);
-      const tier = paymentIntent.metadata.tier || SUBSCRIPTION_TIERS.BASIC;
+      const tier = paymentIntent.metadata.tier;
       const addOns = JSON.parse(paymentIntent.metadata.addOns || "[]");
 
       try {
-        await storage.upgradeToPremium(userId, tier);
+        // First upgrade the user's subscription tier
+        await storage.upgradeToPremium(userId, tier as keyof typeof SUBSCRIPTION_TIERS);
 
-        // Enable add-ons if purchased
+        // Then enable any purchased add-ons
         if (addOns.length > 0) {
           await storage.updateUserAddOns(userId, addOns);
         }
+
+        console.log(`Successfully processed payment for user ${userId}`, {
+          tier,
+          addOns,
+        });
       } catch (error) {
-        console.error("Error upgrading user to premium:", error);
-        return res.status(500).json({ message: "Failed to upgrade user" });
+        console.error("Error processing successful payment:", error);
+        return res.status(500).json({ message: "Failed to process payment" });
       }
     }
 
