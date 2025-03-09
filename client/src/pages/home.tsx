@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { Loader2, AlertCircle, CheckCircle, Home as HomeIcon, Bath, Bed, Maximize2, Building2, Shield, Sparkles } from "lucide-react";
+import { Loader2, AlertCircle, CheckCircle, Home as HomeIcon, Bath, Bed, Maximize2, Building2, Shield, Sparkles, Search, FileText, BarChart, Check } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
@@ -26,39 +27,6 @@ export default function Home() {
     violations: string[];
     suggestions: string[];
   } | null>(null);
-
-  const form = useForm<InsertListing>({
-    resolver: zodResolver(insertListingSchema),
-    defaultValues: {
-      propertyType: "house",
-      bedrooms: 3,
-      bathrooms: 2,
-      squareFeet: 1500,
-      features: "",
-    },
-  });
-
-  const generateMutation = useMutation({
-    mutationFn: async (data: InsertListing) => {
-      const res = await apiRequest("POST", "/api/listings/generate", data);
-      return res.json();
-    },
-    onSuccess: (data) => {
-      setGeneratedListing(data.generated.listing);
-      setCompliance(data.generated.compliance);
-      toast({
-        title: "Success!",
-        description: "Your listing has been generated and checked for compliance.",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message,
-      });
-    },
-  });
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
@@ -76,300 +44,426 @@ export default function Home() {
             <Button variant="ghost">Features</Button>
             <Button variant="ghost">Pricing</Button>
             <Button variant="ghost">Support</Button>
-            <Button>Get Started</Button>
+            <Button asChild>
+              <Link href="/register">Get Started</Link>
+            </Button>
           </div>
         </div>
       </nav>
 
       <main className="pt-24 pb-16">
         <div className="container mx-auto px-4">
-          {/* Hero Section */}
-          <div className="text-center max-w-3xl mx-auto mb-16">
+          {/* 1️⃣ Hero Section */}
+          <div className="text-center max-w-4xl mx-auto mb-20">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
             >
               <h1 className="text-5xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent mb-6">
-                AI-Powered Real Estate Listings
+                Magically Generate AI-Optimized Real Estate Listings in Seconds
               </h1>
               <p className="text-xl text-muted-foreground mb-8">
-                Create professional, compliant property listings in seconds with our advanced AI technology.
+                Save hours of writing. Get SEO-friendly, Fair Housing-compliant listings with AI-powered automation.
               </p>
+              <Button size="lg" className="h-14 px-8 text-lg" asChild>
+                <Link href="/register">✨ Generate My First Listing</Link>
+              </Button>
+              
+              <div className="mt-12 relative">
+                <div className="absolute -inset-1 bg-gradient-to-r from-primary/30 to-primary/10 rounded-xl blur-md"></div>
+                <div className="relative bg-white rounded-lg border shadow-lg overflow-hidden">
+                  <img 
+                    src="https://images.unsplash.com/photo-1558036117-15d82a90b9b1?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1170&q=80" 
+                    alt="AI-generated listing preview" 
+                    className="w-full h-auto"
+                  />
+                </div>
+              </div>
             </motion.div>
+          </div>
 
-            {/* Feature Cards */}
-            <div className="grid md:grid-cols-3 gap-6 mb-16">
-              <motion.div
+          {/* 2️⃣ How It Works Section */}
+          <div className="max-w-5xl mx-auto mb-24">
+            <h2 className="text-3xl font-bold text-center mb-12">How It Works</h2>
+            <div className="grid md:grid-cols-3 gap-8">
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="bg-white p-8 rounded-xl border shadow-sm flex flex-col items-center text-center"
+              >
+                <div className="bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mb-6">
+                  <HomeIcon className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold mb-3">Step 1: Enter Property Details</h3>
+                <p className="text-muted-foreground">
+                  Just enter basic information: beds, baths, square footage, and key features.
+                </p>
+              </motion.div>
+              
+              <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="p-6 rounded-xl bg-white shadow-md border"
+                className="bg-white p-8 rounded-xl border shadow-sm flex flex-col items-center text-center"
               >
-                <Sparkles className="h-8 w-8 text-primary mb-4" />
-                <h3 className="font-semibold mb-2">AI-Powered Generation</h3>
-                <p className="text-sm text-muted-foreground">
-                  Professional listings crafted by advanced AI in seconds
+                <div className="bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mb-6">
+                  <Sparkles className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold mb-3">Step 2: AI Generates Your Listing</h3>
+                <p className="text-muted-foreground">
+                  Our AI instantly creates SEO-friendly, Fair Housing-compliant listing copy.
                 </p>
               </motion.div>
-
-              <motion.div
+              
+              <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="p-6 rounded-xl bg-white shadow-md border"
+                className="bg-white p-8 rounded-xl border shadow-sm flex flex-col items-center text-center"
               >
-                <Shield className="h-8 w-8 text-primary mb-4" />
-                <h3 className="font-semibold mb-2">Fair Housing Compliant</h3>
-                <p className="text-sm text-muted-foreground">
-                  Automatic compliance checking with HUD guidelines
-                </p>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
-                className="p-6 rounded-xl bg-white shadow-md border"
-              >
-                <HomeIcon className="h-8 w-8 text-primary mb-4" />
-                <h3 className="font-semibold mb-2">SEO Optimized</h3>
-                <p className="text-sm text-muted-foreground">
-                  Listings optimized for maximum visibility
+                <div className="bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mb-6">
+                  <FileText className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold mb-3">Step 3: Copy, Customize & Post</h3>
+                <p className="text-muted-foreground">
+                  Copy your listing to MLS or customize it further to match your style.
                 </p>
               </motion.div>
             </div>
           </div>
 
-          <div className="max-w-6xl mx-auto">
-            <div className="grid lg:grid-cols-2 gap-8">
-              {/* Input Form */}
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.5 }}
+          {/* 3️⃣ Features Section */}
+          <div className="bg-gradient-to-b from-gray-50 to-white py-16 rounded-2xl mb-24">
+            <div className="max-w-5xl mx-auto">
+              <h2 className="text-3xl font-bold text-center mb-4">Why Choose Listing Genie?</h2>
+              <p className="text-center text-muted-foreground mb-12 max-w-3xl mx-auto">
+                Our AI technology gives you the competitive edge in real estate marketing
+              </p>
+
+              <div className="grid md:grid-cols-2 gap-8">
+                <motion.div 
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="flex gap-4"
+                >
+                  <div className="flex-shrink-0">
+                    <Sparkles className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">Instant AI-Powered Listings</h3>
+                    <p className="text-muted-foreground">No more writing from scratch. Generate compelling listings in seconds.</p>
+                  </div>
+                </motion.div>
+
+                <motion.div 
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="flex gap-4"
+                >
+                  <div className="flex-shrink-0">
+                    <Search className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">SEO-Optimized Copy</h3>
+                    <p className="text-muted-foreground">Rank higher on Zillow & Google with keyword-optimized descriptions.</p>
+                  </div>
+                </motion.div>
+
+                <motion.div 
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="flex gap-4"
+                >
+                  <div className="flex-shrink-0">
+                    <Shield className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">Fair Housing Compliant</h3>
+                    <p className="text-muted-foreground">Avoid legal issues with AI that automatically ensures compliance.</p>
+                  </div>
+                </motion.div>
+
+                <motion.div 
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="flex gap-4"
+                >
+                  <div className="flex-shrink-0">
+                    <BarChart className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">Social Media Captions</h3>
+                    <p className="text-muted-foreground">Auto-generate engaging posts for Instagram, Facebook, and TikTok.</p>
+                  </div>
+                </motion.div>
+              </div>
+            </div>
+          </div>
+
+          {/* 4️⃣ Testimonials Section */}
+          <div className="max-w-5xl mx-auto mb-24">
+            <h2 className="text-3xl font-bold text-center mb-12">What Real Estate Professionals Say</h2>
+            <div className="grid md:grid-cols-3 gap-8">
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="bg-white p-8 rounded-xl border shadow-sm"
               >
-                <Card className="shadow-lg border-primary/10">
-                  <CardHeader>
-                    <CardTitle className="text-2xl">Property Details</CardTitle>
-                    <CardDescription>
-                      Enter your property information below to generate a professional listing
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Form {...form}>
-                      <form
-                        onSubmit={form.handleSubmit((data) => generateMutation.mutate(data))}
-                        className="space-y-6"
-                      >
-                        <FormField
-                          control={form.control}
-                          name="propertyType"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Property Type</FormLabel>
-                              <Select
-                                onValueChange={field.onChange}
-                                defaultValue={field.value}
-                              >
-                                <FormControl>
-                                  <SelectTrigger className="h-12">
-                                    <HomeIcon className="w-4 h-4 mr-2" />
-                                    <SelectValue placeholder="Select property type" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="house">House</SelectItem>
-                                  <SelectItem value="condo">Condo</SelectItem>
-                                  <SelectItem value="apartment">Apartment</SelectItem>
-                                  <SelectItem value="townhouse">Townhouse</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <div className="grid grid-cols-3 gap-4">
-                          <FormField
-                            control={form.control}
-                            name="bedrooms"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>
-                                  <div className="flex items-center gap-2">
-                                    <Bed className="w-4 h-4" />
-                                    Bedrooms
-                                  </div>
-                                </FormLabel>
-                                <FormControl>
-                                  <Input type="number" className="h-12" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={form.control}
-                            name="bathrooms"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>
-                                  <div className="flex items-center gap-2">
-                                    <Bath className="w-4 h-4" />
-                                    Bathrooms
-                                  </div>
-                                </FormLabel>
-                                <FormControl>
-                                  <Input type="number" className="h-12" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={form.control}
-                            name="squareFeet"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>
-                                  <div className="flex items-center gap-2">
-                                    <Maximize2 className="w-4 h-4" />
-                                    Square Feet
-                                  </div>
-                                </FormLabel>
-                                <FormControl>
-                                  <Input type="number" className="h-12" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-
-                        <FormField
-                          control={form.control}
-                          name="features"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Key Features</FormLabel>
-                              <FormControl>
-                                <Textarea
-                                  placeholder="Describe notable features (e.g., modern kitchen, hardwood floors, updated appliances)"
-                                  className="h-32 resize-none"
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <Button
-                          type="submit"
-                          className="w-full h-12 text-base"
-                          disabled={generateMutation.isPending}
-                        >
-                          {generateMutation.isPending ? (
-                            <>
-                              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                              Generating Listing...
-                            </>
-                          ) : (
-                            "Generate Professional Listing"
-                          )}
-                        </Button>
-                      </form>
-                    </Form>
-                  </CardContent>
-                </Card>
+                <div className="flex items-center mb-4">
+                  <div className="w-12 h-12 bg-primary/20 rounded-full mr-4"></div>
+                  <div>
+                    <h4 className="font-semibold">John D.</h4>
+                    <p className="text-sm text-muted-foreground">Realtor</p>
+                  </div>
+                </div>
+                <p className="italic text-muted-foreground">
+                  "This tool saves me hours every week! I used to struggle with writing compelling listings, but now it's done for me in seconds."
+                </p>
               </motion.div>
-
-              {/* Output Section */}
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.6 }}
-                className="space-y-6"
+              
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="bg-white p-8 rounded-xl border shadow-sm"
               >
-                {generatedListing && (
-                  <Card className="shadow-lg border-primary/10">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <div>
-                        <CardTitle className="text-2xl">Generated Listing</CardTitle>
-                        <CardDescription>AI-powered and optimized for engagement</CardDescription>
-                      </div>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          navigator.clipboard.writeText(generatedListing);
-                          toast({ description: "Listing copied to clipboard!" });
-                        }}
-                      >
-                        Copy Listing
-                      </Button>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="rounded-lg bg-muted/30 p-6 border">
-                        <p className="whitespace-pre-wrap text-base leading-relaxed">
-                          {generatedListing}
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {compliance && (
-                  <Card className="shadow-lg border-primary/10">
-                    <CardHeader>
-                      <div className="flex items-center gap-4">
-                        <CardTitle className="text-2xl">Fair Housing Compliance</CardTitle>
-                        <Badge
-                          variant={compliance.isCompliant ? "default" : "destructive"}
-                          className={cn(
-                            "text-sm py-1",
-                            compliance.isCompliant ? "bg-green-500/10 text-green-600" : ""
-                          )}
-                        >
-                          {compliance.isCompliant ? "Compliant" : "Needs Review"}
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      {!compliance.isCompliant && compliance.violations.length > 0 && (
-                        <Alert variant="destructive" className="border-destructive/30">
-                          <AlertCircle className="h-5 w-5" />
-                          <AlertTitle className="text-lg font-semibold">Compliance Issues Found</AlertTitle>
-                          <AlertDescription>
-                            <ul className="list-disc pl-4 mt-2 space-y-2">
-                              {compliance.violations.map((violation, i) => (
-                                <li key={i} className="text-sm">{violation}</li>
-                              ))}
-                            </ul>
-                          </AlertDescription>
-                        </Alert>
-                      )}
-
-                      {compliance.suggestions.length > 0 && (
-                        <Alert className="border-primary/30 bg-primary/5">
-                          <CheckCircle className="h-5 w-5 text-primary" />
-                          <AlertTitle className="text-lg font-semibold">Suggestions for Improvement</AlertTitle>
-                          <AlertDescription>
-                            <ul className="list-disc pl-4 mt-2 space-y-2">
-                              {compliance.suggestions.map((suggestion, i) => (
-                                <li key={i} className="text-sm">{suggestion}</li>
-                              ))}
-                            </ul>
-                          </AlertDescription>
-                        </Alert>
-                      )}
-                    </CardContent>
-                  </Card>
-                )}
+                <div className="flex items-center mb-4">
+                  <div className="w-12 h-12 bg-primary/20 rounded-full mr-4"></div>
+                  <div>
+                    <h4 className="font-semibold">Sarah K.</h4>
+                    <p className="text-sm text-muted-foreground">Top Agent</p>
+                  </div>
+                </div>
+                <p className="italic text-muted-foreground">
+                  "My listings now rank higher on Zillow! The SEO optimization makes a real difference in visibility and engagement."
+                </p>
+              </motion.div>
+              
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="bg-white p-8 rounded-xl border shadow-sm"
+              >
+                <div className="flex items-center mb-4">
+                  <div className="w-12 h-12 bg-primary/20 rounded-full mr-4"></div>
+                  <div>
+                    <h4 className="font-semibold">Michael B.</h4>
+                    <p className="text-sm text-muted-foreground">Broker</p>
+                  </div>
+                </div>
+                <p className="italic text-muted-foreground">
+                  "I listed and sold a home faster thanks to AI-optimized descriptions! The quality of writing is impressive."
+                </p>
               </motion.div>
             </div>
+          </div>
+
+          {/* 5️⃣ Pricing Section */}
+          <div className="bg-gradient-to-b from-gray-50 to-white py-16 rounded-2xl mb-24">
+            <div className="max-w-5xl mx-auto">
+              <h2 className="text-3xl font-bold text-center mb-4">Pricing Plans</h2>
+              <p className="text-center text-muted-foreground mb-12 max-w-3xl mx-auto">
+                Choose the plan that fits your business needs
+              </p>
+
+              <div className="grid md:grid-cols-4 gap-8">
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="bg-white p-6 rounded-xl border shadow-sm"
+                >
+                  <h3 className="text-xl font-semibold mb-2">Basic</h3>
+                  <div className="mb-4">
+                    <span className="text-3xl font-bold">$29</span>
+                    <span className="text-muted-foreground">/mo</span>
+                  </div>
+                  <ul className="space-y-2 mb-6">
+                    <li className="flex items-center">
+                      <Check className="h-4 w-4 text-primary mr-2" />
+                      <span className="text-sm">10 listings per month</span>
+                    </li>
+                    <li className="flex items-center">
+                      <Check className="h-4 w-4 text-primary mr-2" />
+                      <span className="text-sm">SEO optimization</span>
+                    </li>
+                    <li className="flex items-center">
+                      <Check className="h-4 w-4 text-primary mr-2" />
+                      <span className="text-sm">Fair Housing compliance</span>
+                    </li>
+                  </ul>
+                  <Button variant="outline" className="w-full">Get Started</Button>
+                </motion.div>
+                
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="bg-white p-6 rounded-xl border shadow-sm relative"
+                >
+                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-primary text-white text-xs font-medium px-3 py-1 rounded-full">
+                    Most Popular
+                  </div>
+                  <h3 className="text-xl font-semibold mb-2">Pro</h3>
+                  <div className="mb-4">
+                    <span className="text-3xl font-bold">$99</span>
+                    <span className="text-muted-foreground">/mo</span>
+                  </div>
+                  <ul className="space-y-2 mb-6">
+                    <li className="flex items-center">
+                      <Check className="h-4 w-4 text-primary mr-2" />
+                      <span className="text-sm">50 listings per month</span>
+                    </li>
+                    <li className="flex items-center">
+                      <Check className="h-4 w-4 text-primary mr-2" />
+                      <span className="text-sm">Social media captions</span>
+                    </li>
+                    <li className="flex items-center">
+                      <Check className="h-4 w-4 text-primary mr-2" />
+                      <span className="text-sm">MLS-optimized format</span>
+                    </li>
+                    <li className="flex items-center">
+                      <Check className="h-4 w-4 text-primary mr-2" />
+                      <span className="text-sm">Custom tone & style</span>
+                    </li>
+                  </ul>
+                  <Button className="w-full">Get Started</Button>
+                </motion.div>
+                
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="bg-white p-6 rounded-xl border shadow-sm"
+                >
+                  <h3 className="text-xl font-semibold mb-2">Enterprise</h3>
+                  <div className="mb-4">
+                    <span className="text-3xl font-bold">$499</span>
+                    <span className="text-muted-foreground">/mo</span>
+                  </div>
+                  <ul className="space-y-2 mb-6">
+                    <li className="flex items-center">
+                      <Check className="h-4 w-4 text-primary mr-2" />
+                      <span className="text-sm">Unlimited listings</span>
+                    </li>
+                    <li className="flex items-center">
+                      <Check className="h-4 w-4 text-primary mr-2" />
+                      <span className="text-sm">API access</span>
+                    </li>
+                    <li className="flex items-center">
+                      <Check className="h-4 w-4 text-primary mr-2" />
+                      <span className="text-sm">Team accounts</span>
+                    </li>
+                    <li className="flex items-center">
+                      <Check className="h-4 w-4 text-primary mr-2" />
+                      <span className="text-sm">Brand voice customization</span>
+                    </li>
+                  </ul>
+                  <Button variant="outline" className="w-full">Contact Sales</Button>
+                </motion.div>
+                
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="bg-white p-6 rounded-xl border shadow-sm"
+                >
+                  <h3 className="text-xl font-semibold mb-2">Pay-Per-Use</h3>
+                  <div className="mb-4">
+                    <span className="text-3xl font-bold">$5</span>
+                    <span className="text-muted-foreground">/listing</span>
+                  </div>
+                  <ul className="space-y-2 mb-6">
+                    <li className="flex items-center">
+                      <Check className="h-4 w-4 text-primary mr-2" />
+                      <span className="text-sm">Pay as you go</span>
+                    </li>
+                    <li className="flex items-center">
+                      <Check className="h-4 w-4 text-primary mr-2" />
+                      <span className="text-sm">All standard features</span>
+                    </li>
+                    <li className="flex items-center">
+                      <Check className="h-4 w-4 text-primary mr-2" />
+                      <span className="text-sm">No monthly commitment</span>
+                    </li>
+                  </ul>
+                  <Button variant="outline" className="w-full">Get Started</Button>
+                </motion.div>
+              </div>
+            </div>
+          </div>
+
+          {/* 6️⃣ FAQ Section */}
+          <div className="max-w-4xl mx-auto mb-24">
+            <h2 className="text-3xl font-bold text-center mb-12">Frequently Asked Questions</h2>
+            <div className="space-y-6">
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="bg-white p-6 rounded-xl border shadow-sm"
+              >
+                <h3 className="text-lg font-semibold mb-2">Is this compliant with Fair Housing laws?</h3>
+                <p className="text-muted-foreground">
+                  Yes! Our AI is specifically trained to remove discriminatory wording automatically, helping you avoid Fair Housing Act violations.
+                </p>
+              </motion.div>
+              
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="bg-white p-6 rounded-xl border shadow-sm"
+              >
+                <h3 className="text-lg font-semibold mb-2">Can I edit the AI-generated descriptions?</h3>
+                <p className="text-muted-foreground">
+                  Absolutely! Listings are fully customizable - use our AI-generated content as a starting point and make any edits to fit your style.
+                </p>
+              </motion.div>
+              
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="bg-white p-6 rounded-xl border shadow-sm"
+              >
+                <h3 className="text-lg font-semibold mb-2">Do you integrate with MLS systems?</h3>
+                <p className="text-muted-foreground">
+                  Enterprise users get API access to sync with MLS platforms. Our listings are formatted to work seamlessly with most MLS systems.
+                </p>
+              </motion.div>
+              
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="bg-white p-6 rounded-xl border shadow-sm"
+              >
+                <h3 className="text-lg font-semibold mb-2">What happens if I run out of listings?</h3>
+                <p className="text-muted-foreground">
+                  You can upgrade to a higher tier plan or switch to our Pay-Per-Use option for additional listings without changing your subscription.
+                </p>
+              </motion.div>
+            </div>
+          </div>
+
+          {/* 7️⃣ Final CTA Section */}
+          <div className="max-w-4xl mx-auto mb-16 text-center bg-gradient-to-r from-primary/20 to-primary/5 py-16 px-8 rounded-2xl">
+            <h2 className="text-3xl font-bold mb-6">Ready to Automate Your Listings and Sell Faster?</h2>
+            <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+              Join over 1,000+ real estate professionals already using Listing Genie to create engaging, compliant property descriptions.
+            </p>
+            <Button size="lg" className="h-14 px-8 text-lg" asChild>
+              <Link href="/register">Start Now – Generate Your First Listing Instantly</Link>
+            </Button>
           </div>
         </div>
       </main>
@@ -411,6 +505,9 @@ export default function Home() {
                 <li>Terms of Service</li>
               </ul>
             </div>
+          </div>
+          <div className="border-t mt-8 pt-8 text-center text-sm text-muted-foreground">
+            © {new Date().getFullYear()} Listing Genie. All rights reserved.
           </div>
         </div>
       </footer>
