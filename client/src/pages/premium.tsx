@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Loader2, Star, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -175,7 +176,28 @@ function CheckoutForm({ selectedTier, selectedAddOns, total }: {
 }
 
 export default function PremiumPage() {
-  const [selectedTier, setSelectedTier] = useState<keyof typeof SUBSCRIPTION_PRICES>(SUBSCRIPTION_TIERS.BASIC); // Changed default tier
+  // Get the plan from URL parameters
+  const [location] = useLocation();
+  const params = new URLSearchParams(location.split('?')[1]);
+  const planFromUrl = params.get('plan');
+
+  // Map URL plan parameter to subscription tier
+  const getInitialTier = () => {
+    switch (planFromUrl) {
+      case 'pay_per_use':
+        return SUBSCRIPTION_TIERS.PAY_PER_USE;
+      case 'basic':
+        return SUBSCRIPTION_TIERS.BASIC;
+      case 'pro':
+        return SUBSCRIPTION_TIERS.PRO;
+      case 'enterprise':
+        return SUBSCRIPTION_TIERS.ENTERPRISE;
+      default:
+        return SUBSCRIPTION_TIERS.PRO; // Default to PRO if no valid plan specified
+    }
+  };
+
+  const [selectedTier, setSelectedTier] = useState<keyof typeof SUBSCRIPTION_PRICES>(getInitialTier());
   const [selectedAddOns, setSelectedAddOns] = useState<string[]>([]);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -263,16 +285,16 @@ export default function PremiumPage() {
             selectedTier={selectedTier}
           />
           <PricingTier
-            name="Pay-Per-Use" // New plan
-            price={1000} //Example price, needs to be fetched from schema
+            name="Pay-Per-Use"
+            price={SUBSCRIPTION_PRICES.payPerUse}
             features={[
               "Pay only for what you use",
               "Ideal for occasional users",
               "Fair Housing compliant content",
               "Email Support"
             ]}
-            onSelect={() => setSelectedTier("payPerUse")} // Added new tier option
-            isSelected={selectedTier === "payPerUse"} // Added new tier option
+            onSelect={() => setSelectedTier(SUBSCRIPTION_TIERS.PAY_PER_USE)}
+            isSelected={selectedTier === SUBSCRIPTION_TIERS.PAY_PER_USE}
             selectedTier={selectedTier}
           />
           <PricingTier

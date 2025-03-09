@@ -304,7 +304,7 @@ export default function Home() {
                     className="w-full"
                     asChild
                   >
-                    <Link href="/premium">Get Started</Link>
+                    <Link href="/premium?plan=pay_per_use">Get Started</Link>
                   </Button>
                 </motion.div>
 
@@ -338,7 +338,7 @@ export default function Home() {
                     className="w-full"
                     asChild
                   >
-                    <Link href="/premium">Get Started</Link>
+                    <Link href="/premium?plan=basic">Get Started</Link>
                   </Button>
                 </motion.div>
 
@@ -378,7 +378,7 @@ export default function Home() {
                     className="w-full"
                     asChild
                   >
-                    <Link href="/premium">Get Started</Link>
+                    <Link href="/premium?plan=pro">Get Started</Link>
                   </Button>
                 </motion.div>
 
@@ -416,7 +416,7 @@ export default function Home() {
                     className="w-full"
                     asChild
                   >
-                    <Link href="/premium">Contact Sales</Link>
+                    <Link href="/premium?plan=enterprise">Contact Sales</Link>
                   </Button>
                 </motion.div>
               </div>
