@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Crown, AlertCircle, CheckCircle, Plus } from "lucide-react";
+import { Loader2, Crown, AlertCircle, CheckCircle, Plus, Pencil } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -9,16 +9,58 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import type { Listing } from "@shared/schema";
+import { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+
 
 interface ListingsResponse {
   listings: Listing[];
 }
 
+const apiRequest = async (method: string, url: string, data?: any) => {
+  const response = await fetch(url, {
+    method,
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: data ? JSON.stringify(data) : undefined
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    const errorMessage = errorData.message || response.statusText;
+    throw new Error(errorMessage);
+  }
+  return await response.json();
+};
+
 export default function Dashboard() {
   const { toast } = useToast();
+  const [editingTitleId, setEditingTitleId] = useState<number | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const queryClient = useQueryClient();
 
   const listingsQuery = useQuery<ListingsResponse>({
     queryKey: ['/api/listings']
+  });
+
+  const updateTitleMutation = useMutation({
+    mutationFn: async ({ id, title }: { id: number; title: string }) => {
+      await apiRequest("PATCH", `/api/listings/${id}`, { title });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/listings'] });
+      toast({ description: "Title updated successfully" });
+      setEditingTitleId(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message,
+      });
+    },
   });
 
   if (listingsQuery.isLoading) {
@@ -44,12 +86,11 @@ export default function Dashboard() {
 
   const { listings } = listingsQuery.data || { listings: [] };
   const listingsThisMonth = listings.length;
-  const isFreeTier = true; // We'll implement this with actual user data later
+  const isFreeTier = true; 
   const remainingListings = isFreeTier ? `${5 - listingsThisMonth} remaining` : "Unlimited";
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-      {/* Navigation */}
       <nav className="border-b bg-white/50 backdrop-blur-sm fixed w-full z-50">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center space-x-2">
@@ -155,10 +196,51 @@ export default function Dashboard() {
                   {listings.map((listing: Listing) => (
                     <div key={listing.id}>
                       <div className="flex items-start justify-between">
-                        <div>
-                          <h3 className="font-medium">
-                            {listing.propertyType.charAt(0).toUpperCase() + listing.propertyType.slice(1)}
-                          </h3>
+                        <div className="flex-1">
+                          {editingTitleId === listing.id ? (
+                            <div className="flex gap-2 items-center">
+                              <Input
+                                value={editTitle}
+                                onChange={(e) => setEditTitle(e.target.value)}
+                                className="max-w-sm"
+                              />
+                              <Button
+                                size="sm"
+                                onClick={() => {
+                                  updateTitleMutation.mutate({
+                                    id: listing.id,
+                                    title: editTitle,
+                                  });
+                                }}
+                              >
+                                Save
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setEditingTitleId(null)}
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-medium">
+                                {listing.title || (listing.propertyType.charAt(0).toUpperCase() + listing.propertyType.slice(1))}
+                              </h3>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 w-6 p-0"
+                                onClick={() => {
+                                  setEditingTitleId(listing.id);
+                                  setEditTitle(listing.title || "");
+                                }}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          )}
                           <p className="text-sm text-muted-foreground">
                             {listing.bedrooms} bed • {listing.bathrooms} bath • {listing.squareFeet} sq ft
                           </p>

@@ -6,6 +6,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUserListingCount(userId: number): Promise<void>;
   createListing(userId: number, listing: InsertListing, generatedListing: string): Promise<Listing>;
+  updateListingTitle(userId: number, listingId: number, title: string): Promise<Listing>;
   getListings(userId: number): Promise<Listing[]>;
   getUserListingCount(userId: number): Promise<number>;
 }
@@ -64,6 +65,20 @@ export class MemStorage implements IStorage {
     };
     this.listings.set(id, listing);
     return listing;
+  }
+
+  async updateListingTitle(userId: number, listingId: number, title: string): Promise<Listing> {
+    const listing = Array.from(this.listings.values()).find(
+      (l) => l.id === listingId && l.userId === userId
+    );
+
+    if (!listing) {
+      throw new Error("Listing not found or unauthorized");
+    }
+
+    const updatedListing = { ...listing, title };
+    this.listings.set(listingId, updatedListing);
+    return updatedListing;
   }
 
   async getListings(userId: number): Promise<Listing[]> {

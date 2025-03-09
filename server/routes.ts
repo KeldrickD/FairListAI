@@ -3,6 +3,7 @@ import { createServer } from "http";
 import { storage } from "./storage";
 import { generateListing } from "./lib/openai";
 import { insertListingSchema } from "@shared/schema";
+import { z } from "zod";
 
 export async function registerRoutes(app: Express) {
   app.post("/api/listings/generate", async (req, res) => {
@@ -41,6 +42,26 @@ export async function registerRoutes(app: Express) {
       console.error("Error generating listing:", error);
       return res.status(400).json({ 
         message: error instanceof Error ? error.message : "Failed to generate listing" 
+      });
+    }
+  });
+
+  app.patch("/api/listings/:id", async (req, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const listingId = parseInt(req.params.id);
+      const { title } = z.object({ title: z.string().min(3).max(100) }).parse(req.body);
+
+      const listing = await storage.updateListingTitle(userId, listingId, title);
+      return res.json({ listing });
+    } catch (error) {
+      console.error("Error updating listing:", error);
+      return res.status(400).json({ 
+        message: error instanceof Error ? error.message : "Failed to update listing" 
       });
     }
   });
