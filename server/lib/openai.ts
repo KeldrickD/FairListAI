@@ -24,12 +24,21 @@ export interface ComplianceCheck {
   suggestions: string[];
 }
 
+const TONE_DESCRIPTIONS = {
+  luxury: "elegant, sophisticated, and premium, emphasizing high-end features and finishes",
+  cozy: "warm, inviting, and comfortable, highlighting intimate spaces and homey features",
+  modern: "sleek, contemporary, and cutting-edge, focusing on innovative features and clean design",
+  professional: "balanced, factual, and straightforward, emphasizing practical features",
+  "family-friendly": "welcoming, spacious, and practical, highlighting versatile living spaces",
+};
+
 export async function generateListing(listing: {
   propertyType: string;
   bedrooms: number;
   bathrooms: number;
   squareFeet: number;
   features: string;
+  tone: keyof typeof TONE_DESCRIPTIONS;
 }): Promise<{
   listing: string;
   seoScore: number;
@@ -42,6 +51,7 @@ export async function generateListing(listing: {
         {
           role: "system",
           content: `You are a real estate listing expert that generates Fair Housing Act compliant listings. 
+          Create a listing with a ${listing.tone} tone (${TONE_DESCRIPTIONS[listing.tone]}).
           Focus on property features and avoid any language that could discriminate. 
           Use SEO-friendly terms and natural descriptions.
 

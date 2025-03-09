@@ -38,6 +38,7 @@ export default function NewListing() {
       bathrooms: 2,
       squareFeet: 1500,
       features: "",
+      tone: "professional", // Added tone default value
     },
   });
 
@@ -104,10 +105,10 @@ export default function NewListing() {
                       <FormItem>
                         <FormLabel>Listing Title</FormLabel>
                         <FormControl>
-                          <Input 
-                            placeholder="e.g., Modern Downtown Condo or Family Home in Suburbia" 
+                          <Input
+                            placeholder="e.g., Modern Downtown Condo or Family Home in Suburbia"
                             className="h-12"
-                            {...field} 
+                            {...field}
                           />
                         </FormControl>
                         <FormMessage />
@@ -136,6 +137,34 @@ export default function NewListing() {
                             <SelectItem value="condo">Condo</SelectItem>
                             <SelectItem value="apartment">Apartment</SelectItem>
                             <SelectItem value="townhouse">Townhouse</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="tone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Listing Tone</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="h-12">
+                              <SelectValue placeholder="Select tone style" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="luxury">Luxury</SelectItem>
+                            <SelectItem value="cozy">Cozy</SelectItem>
+                            <SelectItem value="modern">Modern</SelectItem>
+                            <SelectItem value="professional">Professional</SelectItem>
+                            <SelectItem value="family-friendly">Family-Friendly</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />

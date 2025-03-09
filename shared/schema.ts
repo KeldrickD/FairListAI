@@ -19,6 +19,7 @@ export const listings = pgTable("listings", {
   bathrooms: integer("bathrooms").notNull(),
   squareFeet: integer("square_feet").notNull(),
   features: text("features").notNull(),
+  tone: text("tone").notNull(),
   generatedListing: text("generated_listing"),
   generatedAt: timestamp("generated_at"),
 });
@@ -36,6 +37,7 @@ export const insertListingSchema = createInsertSchema(listings)
     bathrooms: true,
     squareFeet: true,
     features: true,
+    tone: true,
   })
   .extend({
     title: z.string().min(3).max(100),
@@ -44,6 +46,7 @@ export const insertListingSchema = createInsertSchema(listings)
     bathrooms: z.coerce.number().min(0).max(20),
     squareFeet: z.coerce.number().min(100).max(50000),
     features: z.string().min(10).max(5000),
+    tone: z.enum(['luxury', 'cozy', 'modern', 'professional', 'family-friendly']),
   });
 
 export type User = typeof users.$inferSelect;
