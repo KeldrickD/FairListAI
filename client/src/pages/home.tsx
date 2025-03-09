@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -69,13 +68,13 @@ export default function Home() {
               <Button size="lg" className="h-14 px-8 text-lg" asChild>
                 <Link href="/register">✨ Generate My First Listing</Link>
               </Button>
-              
+
               <div className="mt-12 relative">
                 <div className="absolute -inset-1 bg-gradient-to-r from-primary/30 to-primary/10 rounded-xl blur-md"></div>
                 <div className="relative bg-white rounded-lg border shadow-lg overflow-hidden">
-                  <img 
-                    src="https://images.unsplash.com/photo-1558036117-15d82a90b9b1?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1170&q=80" 
-                    alt="AI-generated listing preview" 
+                  <img
+                    src="https://images.unsplash.com/photo-1558036117-15d82a90b9b1?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1170&q=80"
+                    alt="AI-generated listing preview"
                     className="w-full h-auto"
                   />
                 </div>
@@ -87,7 +86,7 @@ export default function Home() {
           <div className="max-w-5xl mx-auto mb-24">
             <h2 className="text-3xl font-bold text-center mb-12">How It Works</h2>
             <div className="grid md:grid-cols-3 gap-8">
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
@@ -101,8 +100,8 @@ export default function Home() {
                   Just enter basic information: beds, baths, square footage, and key features.
                 </p>
               </motion.div>
-              
-              <motion.div 
+
+              <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
@@ -116,8 +115,8 @@ export default function Home() {
                   Our AI instantly creates SEO-friendly, Fair Housing-compliant listing copy.
                 </p>
               </motion.div>
-              
-              <motion.div 
+
+              <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
@@ -143,7 +142,7 @@ export default function Home() {
               </p>
 
               <div className="grid md:grid-cols-2 gap-8">
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.1 }}
@@ -158,7 +157,7 @@ export default function Home() {
                   </div>
                 </motion.div>
 
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.2 }}
@@ -173,7 +172,7 @@ export default function Home() {
                   </div>
                 </motion.div>
 
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.3 }}
@@ -188,7 +187,7 @@ export default function Home() {
                   </div>
                 </motion.div>
 
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.4 }}
@@ -210,7 +209,7 @@ export default function Home() {
           <div className="max-w-5xl mx-auto mb-24">
             <h2 className="text-3xl font-bold text-center mb-12">What Real Estate Professionals Say</h2>
             <div className="grid md:grid-cols-3 gap-8">
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
@@ -227,8 +226,8 @@ export default function Home() {
                   "This tool saves me hours every week! I used to struggle with writing compelling listings, but now it's done for me in seconds."
                 </p>
               </motion.div>
-              
-              <motion.div 
+
+              <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
@@ -245,8 +244,8 @@ export default function Home() {
                   "My listings now rank higher on Zillow! The SEO optimization makes a real difference in visibility and engagement."
                 </p>
               </motion.div>
-              
-              <motion.div 
+
+              <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
@@ -275,7 +274,7 @@ export default function Home() {
               </p>
 
               <div className="grid md:grid-cols-4 gap-8">
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 }}
@@ -300,13 +299,53 @@ export default function Home() {
                       <span className="text-sm">Fair Housing compliance</span>
                     </li>
                   </ul>
-                  <Button variant="outline" className="w-full">Get Started</Button>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    asChild
+                  >
+                    <Link href="/premium">Get Started</Link>
+                  </Button>
                 </motion.div>
-                
-                <motion.div 
+
+                <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
+                  className="bg-white p-6 rounded-xl border shadow-sm"
+                >
+                  <h3 className="text-xl font-semibold mb-2">Pay-Per-Use</h3>
+                  <div className="mb-4">
+                    <span className="text-3xl font-bold">$5</span>
+                    <span className="text-muted-foreground">/listing</span>
+                  </div>
+                  <ul className="space-y-2 mb-6">
+                    <li className="flex items-center">
+                      <Check className="h-4 w-4 text-primary mr-2" />
+                      <span className="text-sm">Pay as you go</span>
+                    </li>
+                    <li className="flex items-center">
+                      <Check className="h-4 w-4 text-primary mr-2" />
+                      <span className="text-sm">All standard features</span>
+                    </li>
+                    <li className="flex items-center">
+                      <Check className="h-4 w-4 text-primary mr-2" />
+                      <span className="text-sm">No monthly commitment</span>
+                    </li>
+                  </ul>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    asChild
+                  >
+                    <Link href="/premium">Get Started</Link>
+                  </Button>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
                   className="bg-white p-6 rounded-xl border shadow-sm relative"
                 >
                   <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-primary text-white text-xs font-medium px-3 py-1 rounded-full">
@@ -335,13 +374,18 @@ export default function Home() {
                       <span className="text-sm">Custom tone & style</span>
                     </li>
                   </ul>
-                  <Button className="w-full">Get Started</Button>
+                  <Button
+                    className="w-full"
+                    asChild
+                  >
+                    <Link href="/premium">Get Started</Link>
+                  </Button>
                 </motion.div>
-                
-                <motion.div 
+
+                <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
+                  transition={{ delay: 0.4 }}
                   className="bg-white p-6 rounded-xl border shadow-sm"
                 >
                   <h3 className="text-xl font-semibold mb-2">Enterprise</h3>
@@ -367,35 +411,13 @@ export default function Home() {
                       <span className="text-sm">Brand voice customization</span>
                     </li>
                   </ul>
-                  <Button variant="outline" className="w-full">Contact Sales</Button>
-                </motion.div>
-                
-                <motion.div 
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 }}
-                  className="bg-white p-6 rounded-xl border shadow-sm"
-                >
-                  <h3 className="text-xl font-semibold mb-2">Pay-Per-Use</h3>
-                  <div className="mb-4">
-                    <span className="text-3xl font-bold">$5</span>
-                    <span className="text-muted-foreground">/listing</span>
-                  </div>
-                  <ul className="space-y-2 mb-6">
-                    <li className="flex items-center">
-                      <Check className="h-4 w-4 text-primary mr-2" />
-                      <span className="text-sm">Pay as you go</span>
-                    </li>
-                    <li className="flex items-center">
-                      <Check className="h-4 w-4 text-primary mr-2" />
-                      <span className="text-sm">All standard features</span>
-                    </li>
-                    <li className="flex items-center">
-                      <Check className="h-4 w-4 text-primary mr-2" />
-                      <span className="text-sm">No monthly commitment</span>
-                    </li>
-                  </ul>
-                  <Button variant="outline" className="w-full">Get Started</Button>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    asChild
+                  >
+                    <Link href="/premium">Contact Sales</Link>
+                  </Button>
                 </motion.div>
               </div>
             </div>
@@ -405,7 +427,7 @@ export default function Home() {
           <div className="max-w-4xl mx-auto mb-24">
             <h2 className="text-3xl font-bold text-center mb-12">Frequently Asked Questions</h2>
             <div className="space-y-6">
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
@@ -416,8 +438,8 @@ export default function Home() {
                   Yes! Our AI is specifically trained to remove discriminatory wording automatically, helping you avoid Fair Housing Act violations.
                 </p>
               </motion.div>
-              
-              <motion.div 
+
+              <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
@@ -428,8 +450,8 @@ export default function Home() {
                   Absolutely! Listings are fully customizable - use our AI-generated content as a starting point and make any edits to fit your style.
                 </p>
               </motion.div>
-              
-              <motion.div 
+
+              <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
@@ -440,8 +462,8 @@ export default function Home() {
                   Enterprise users get API access to sync with MLS platforms. Our listings are formatted to work seamlessly with most MLS systems.
                 </p>
               </motion.div>
-              
-              <motion.div 
+
+              <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
