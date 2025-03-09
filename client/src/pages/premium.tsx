@@ -270,14 +270,27 @@ export default function PremiumPage() {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 mb-12">
+        <div className="grid md:grid-cols-4 gap-8 mb-12">
+          <PricingTier
+            name="Pay-Per-Use"
+            price={SUBSCRIPTION_PRICES.PAY_PER_USE}
+            features={[
+              "Pay as you go",
+              "All standard features",
+              "No monthly commitment",
+              "Email support"
+            ]}
+            onSelect={() => setSelectedTier(SUBSCRIPTION_TIERS.PAY_PER_USE)}
+            isSelected={selectedTier === SUBSCRIPTION_TIERS.PAY_PER_USE}
+            selectedTier={selectedTier}
+          />
           <PricingTier
             name="Basic"
-            price={SUBSCRIPTION_PRICES.basic}
+            price={SUBSCRIPTION_PRICES.BASIC}
             features={[
-              "10 AI-generated listings per month",
-              "Fair Housing compliant content",
-              "Basic property descriptions",
+              "10 listings per month",
+              "SEO optimization",
+              "Fair Housing compliance",
               "Email support"
             ]}
             onSelect={() => setSelectedTier(SUBSCRIPTION_TIERS.BASIC)}
@@ -285,27 +298,14 @@ export default function PremiumPage() {
             selectedTier={selectedTier}
           />
           <PricingTier
-            name="Pay-Per-Use"
-            price={SUBSCRIPTION_PRICES.payPerUse}
-            features={[
-              "Pay only for what you use",
-              "Ideal for occasional users",
-              "Fair Housing compliant content",
-              "Email Support"
-            ]}
-            onSelect={() => setSelectedTier(SUBSCRIPTION_TIERS.PAY_PER_USE)}
-            isSelected={selectedTier === SUBSCRIPTION_TIERS.PAY_PER_USE}
-            selectedTier={selectedTier}
-          />
-          <PricingTier
             name="Pro"
-            price={SUBSCRIPTION_PRICES.pro}
+            price={SUBSCRIPTION_PRICES.PRO}
             features={[
-              "50 AI-generated listings per month",
-              "SEO optimization included",
-              "Social media content generation",
+              "50 listings per month",
+              "SEO optimization",
+              "Social media content",
               "Priority support",
-              "MLS integration"
+              "Custom tone & style"
             ]}
             isPopular
             onSelect={() => setSelectedTier(SUBSCRIPTION_TIERS.PRO)}
@@ -314,13 +314,13 @@ export default function PremiumPage() {
           />
           <PricingTier
             name="Enterprise"
-            price={SUBSCRIPTION_PRICES.enterprise}
+            price={SUBSCRIPTION_PRICES.ENTERPRISE}
             features={[
-              "Unlimited AI-generated listings",
-              "API access for automation",
+              "Unlimited listings",
+              "API access",
+              "Team accounts",
               "Custom integrations",
-              "Dedicated account manager",
-              "White-label options"
+              "Dedicated support"
             ]}
             onSelect={() => setSelectedTier(SUBSCRIPTION_TIERS.ENTERPRISE)}
             isSelected={selectedTier === SUBSCRIPTION_TIERS.ENTERPRISE}
