@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Crown, AlertCircle, CheckCircle, Plus, Pencil } from "lucide-react";
+import { Loader2, Crown, AlertCircle, CheckCircle, Plus, Pencil, Download } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -33,6 +33,33 @@ const apiRequest = async (method: string, url: string, data?: any) => {
     throw new Error(errorMessage);
   }
   return await response.json();
+};
+
+const exportListing = (listing: Listing, format: 'text' | 'csv') => {
+  let content = '';
+  const filename = `listing-${listing.id}-${format === 'csv' ? 'data' : 'description'}.${format}`;
+
+  if (format === 'csv') {
+    content = `Title,Property Type,Bedrooms,Bathrooms,Square Feet,Features,Generated At\n`;
+    content += `"${listing.title}","${listing.propertyType}",${listing.bedrooms},${listing.bathrooms},${listing.squareFeet},"${listing.features}","${listing.generatedAt}"\n`;
+  } else {
+    content = `${listing.title}\n\n`;
+    content += `Property Details:\n`;
+    content += `Type: ${listing.propertyType}\n`;
+    content += `Bedrooms: ${listing.bedrooms}\n`;
+    content += `Bathrooms: ${listing.bathrooms}\n`;
+    content += `Square Feet: ${listing.squareFeet}\n\n`;
+    content += `Features:\n${listing.features}\n\n`;
+    content += `Generated Listing:\n${listing.generatedListing}\n`;
+  }
+
+  const blob = new Blob([content], { type: 'text/plain' });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  window.URL.revokeObjectURL(url);
 };
 
 export default function Dashboard() {
@@ -86,7 +113,7 @@ export default function Dashboard() {
 
   const { listings } = listingsQuery.data || { listings: [] };
   const listingsThisMonth = listings.length;
-  const isFreeTier = true; 
+  const isFreeTier = true;
   const remainingListings = isFreeTier ? `${5 - listingsThisMonth} remaining` : "Unlimited";
 
   return (
@@ -245,7 +272,27 @@ export default function Dashboard() {
                             {listing.bedrooms} bed • {listing.bathrooms} bath • {listing.squareFeet} sq ft
                           </p>
                         </div>
-                        <CheckCircle className="h-5 w-5 text-green-500" />
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => exportListing(listing, 'text')}
+                            title="Export as Text"
+                          >
+                            <Download className="h-4 w-4 mr-1" />
+                            Text
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => exportListing(listing, 'csv')}
+                            title="Export as CSV"
+                          >
+                            <Download className="h-4 w-4 mr-1" />
+                            CSV
+                          </Button>
+                          <CheckCircle className="h-5 w-5 text-green-500" />
+                        </div>
                       </div>
                       {listing.generatedListing && (
                         <p className="mt-2 text-sm">
