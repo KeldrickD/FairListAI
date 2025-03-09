@@ -43,16 +43,16 @@ export async function generateListing(listing: {
           role: "system",
           content: `You are a real estate listing expert that generates Fair Housing Act compliant listings. 
           Focus on property features and avoid any language that could discriminate. 
-          Use SEO-friendly terms and natural descriptions. Return results in JSON format with listing text, SEO score (0-100), and compliance details.
+          Use SEO-friendly terms and natural descriptions.
 
-          The response should be a JSON object with the following structure:
+          Respond with a JSON string in this exact format:
           {
-            "listing": "string",
-            "seoScore": number,
+            "listing": "<the generated listing text>",
+            "seoScore": <number between 0-100>,
             "compliance": {
-              "isCompliant": boolean,
-              "violations": string[],
-              "suggestions": string[]
+              "isCompliant": <boolean>,
+              "violations": [<array of violation strings>],
+              "suggestions": [<array of suggestion strings>]
             }
           }`
         },
@@ -66,7 +66,8 @@ export async function generateListing(listing: {
           Features: ${listing.features}`
         }
       ],
-      response_format: { type: "json_object" }
+      temperature: 0.7,
+      max_tokens: 1000
     });
 
     if (!response.choices[0].message.content) {
@@ -89,6 +90,7 @@ export async function generateListing(listing: {
       }
     };
   } catch (error) {
+    console.error("OpenAI API Error:", error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     throw new Error(`Failed to generate listing: ${errorMessage}`);
   }
