@@ -18,6 +18,8 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Link, useLocation } from "wouter";
 import { queryClient } from "@/lib/queryClient";
+import { AlertCircle, CheckCircle } from "lucide-react";
+
 
 export default function NewListing() {
   const { toast } = useToast();
@@ -305,6 +307,54 @@ export default function NewListing() {
                       </div>
                     </CardContent>
                   </Card>
+                  {/* Add after the generated listing card */}
+                  {compliance && (
+                    <Card className="shadow-lg border-primary/10">
+                      <CardHeader>
+                        <div className="flex items-center gap-4">
+                          <CardTitle className="text-2xl">Fair Housing Compliance</CardTitle>
+                          <Badge
+                            variant={compliance.isCompliant ? "default" : "destructive"}
+                            className={cn(
+                              "text-sm py-1",
+                              compliance.isCompliant ? "bg-green-500/10 text-green-600" : ""
+                            )}
+                          >
+                            {compliance.isCompliant ? "Compliant" : "Needs Review"}
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        {!compliance.isCompliant && compliance.violations.length > 0 && (
+                          <Alert variant="destructive" className="border-destructive/30">
+                            <AlertCircle className="h-5 w-5" />
+                            <AlertTitle className="text-lg font-semibold">Compliance Issues Found</AlertTitle>
+                            <AlertDescription>
+                              <ul className="list-disc pl-4 mt-2 space-y-2">
+                                {compliance.violations.map((violation, i) => (
+                                  <li key={i} className="text-sm">{violation}</li>
+                                ))}
+                              </ul>
+                            </AlertDescription>
+                          </Alert>
+                        )}
+
+                        {compliance.suggestions.length > 0 && (
+                          <Alert className="border-primary/30 bg-primary/5">
+                            <CheckCircle className="h-5 w-5 text-primary" />
+                            <AlertTitle className="text-lg font-semibold">Suggestions for Improvement</AlertTitle>
+                            <AlertDescription>
+                              <ul className="list-disc pl-4 mt-2 space-y-2">
+                                {compliance.suggestions.map((suggestion, i) => (
+                                  <li key={i} className="text-sm">{suggestion}</li>
+                                ))}
+                              </ul>
+                            </AlertDescription>
+                          </Alert>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
               )}
             </CardContent>
