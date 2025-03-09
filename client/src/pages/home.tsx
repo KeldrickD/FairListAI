@@ -280,40 +280,6 @@ export default function Home() {
                   transition={{ delay: 0.1 }}
                   className="bg-white p-6 rounded-xl border shadow-sm"
                 >
-                  <h3 className="text-xl font-semibold mb-2">Basic</h3>
-                  <div className="mb-4">
-                    <span className="text-3xl font-bold">$29</span>
-                    <span className="text-muted-foreground">/mo</span>
-                  </div>
-                  <ul className="space-y-2 mb-6">
-                    <li className="flex items-center">
-                      <Check className="h-4 w-4 text-primary mr-2" />
-                      <span className="text-sm">10 listings per month</span>
-                    </li>
-                    <li className="flex items-center">
-                      <Check className="h-4 w-4 text-primary mr-2" />
-                      <span className="text-sm">SEO optimization</span>
-                    </li>
-                    <li className="flex items-center">
-                      <Check className="h-4 w-4 text-primary mr-2" />
-                      <span className="text-sm">Fair Housing compliance</span>
-                    </li>
-                  </ul>
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    asChild
-                  >
-                    <Link href="/premium">Get Started</Link>
-                  </Button>
-                </motion.div>
-
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                  className="bg-white p-6 rounded-xl border shadow-sm"
-                >
                   <h3 className="text-xl font-semibold mb-2">Pay-Per-Use</h3>
                   <div className="mb-4">
                     <span className="text-3xl font-bold">$5</span>
@@ -331,6 +297,40 @@ export default function Home() {
                     <li className="flex items-center">
                       <Check className="h-4 w-4 text-primary mr-2" />
                       <span className="text-sm">No monthly commitment</span>
+                    </li>
+                  </ul>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    asChild
+                  >
+                    <Link href="/premium">Get Started</Link>
+                  </Button>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="bg-white p-6 rounded-xl border shadow-sm"
+                >
+                  <h3 className="text-xl font-semibold mb-2">Basic</h3>
+                  <div className="mb-4">
+                    <span className="text-3xl font-bold">$29</span>
+                    <span className="text-muted-foreground">/mo</span>
+                  </div>
+                  <ul className="space-y-2 mb-6">
+                    <li className="flex items-center">
+                      <Check className="h-4 w-4 text-primary mr-2" />
+                      <span className="text-sm">10 listings per month</span>
+                    </li>
+                    <li className="flex items-center">
+                      <Check className="h-4 w-4 text-primary mr-2" />
+                      <span className="text-sm">SEO optimization</span>
+                    </li>
+                    <li className="flex items-center">
+                      <Check className="h-4 w-4 text-primary mr-2" />
+                      <span className="text-sm">Fair Housing compliance</span>
                     </li>
                   </ul>
                   <Button
