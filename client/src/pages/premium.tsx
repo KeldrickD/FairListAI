@@ -37,7 +37,8 @@ const PricingTier = ({
   isSelected: boolean;
   selectedTier: keyof typeof SUBSCRIPTION_TIERS;
 }) => {
-  const showPrimaryStyle = isSelected || (isPopular && selectedTier === SUBSCRIPTION_TIERS.PRO);
+  const showPrimaryStyle = isSelected || (isPopular && !isSelected);
+  const isPricePerListing = name === "Pay-Per-Use";
 
   return (
     <Card className={cn("relative", {
@@ -54,7 +55,9 @@ const PricingTier = ({
       <CardHeader>
         <CardTitle className="flex items-baseline gap-2">
           <span className="text-2xl font-bold">${(price / 100).toFixed(2)}</span>
-          <span className="text-sm text-muted-foreground">/month</span>
+          <span className="text-sm text-muted-foreground">
+            {isPricePerListing ? "/listing" : "/mo"}
+          </span>
         </CardTitle>
         <CardDescription className="font-semibold text-lg">{name}</CardDescription>
       </CardHeader>
