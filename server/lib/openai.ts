@@ -44,7 +44,18 @@ export async function generateListing(listing: {
           role: "system",
           content: `You are a real estate listing expert that generates Fair Housing Act compliant listings. 
           Focus on property features and avoid any language that could discriminate. 
-          Use SEO-friendly terms and natural descriptions. Return results in JSON format with listing text, SEO score (0-100), and compliance details.`
+          Use SEO-friendly terms and natural descriptions. Return results in JSON format with listing text, SEO score (0-100), and compliance details.
+
+          The response should be a JSON object with the following structure:
+          {
+            "listing": "string",
+            "seoScore": number,
+            "compliance": {
+              "isCompliant": boolean,
+              "violations": string[],
+              "suggestions": string[]
+            }
+          }`
         },
         {
           role: "user",
@@ -64,11 +75,16 @@ export async function generateListing(listing: {
     }
 
     const result = JSON.parse(response.choices[0].message.content);
+
+    if (!result.listing || typeof result.seoScore !== 'number' || !result.compliance) {
+      throw new Error("Invalid response format from OpenAI");
+    }
+
     return {
       listing: result.listing,
       seoScore: result.seoScore,
       compliance: {
-        isCompliant: result.compliance.isCompliant,
+        isCompliant: result.compliance.isCompliant ?? false,
         violations: result.compliance.violations || [],
         suggestions: result.compliance.suggestions || []
       }
