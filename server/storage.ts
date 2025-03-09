@@ -5,7 +5,7 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUserListingCount(userId: number): Promise<void>;
-  createListing(userId: number, listing: InsertListing): Promise<Listing>;
+  createListing(userId: number, listing: InsertListing, generatedListing: string): Promise<Listing>;
   getListings(userId: number): Promise<Listing[]>;
   getUserListingCount(userId: number): Promise<number>;
 }
@@ -48,28 +48,28 @@ export class MemStorage implements IStorage {
   async updateUserListingCount(userId: number): Promise<void> {
     const user = await this.getUser(userId);
     if (!user) throw new Error("User not found");
-    
+
     user.listingsThisMonth += 1;
     this.users.set(userId, user);
   }
 
-  async createListing(userId: number, insertListing: InsertListing): Promise<Listing> {
+  async createListing(userId: number, insertListing: InsertListing, generatedListing: string): Promise<Listing> {
     const id = this.currentListingId++;
     const listing: Listing = {
       ...insertListing,
       id,
       userId,
-      generatedListing: null,
-      generatedAt: null
+      generatedListing,
+      generatedAt: new Date()
     };
     this.listings.set(id, listing);
     return listing;
   }
 
   async getListings(userId: number): Promise<Listing[]> {
-    return Array.from(this.listings.values()).filter(
-      (listing) => listing.userId === userId
-    );
+    return Array.from(this.listings.values())
+      .filter((listing) => listing.userId === userId)
+      .sort((a, b) => (b.generatedAt?.getTime() || 0) - (a.generatedAt?.getTime() || 0));
   }
 
   async getUserListingCount(userId: number): Promise<number> {

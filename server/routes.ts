@@ -25,12 +25,12 @@ export async function registerRoutes(app: Express) {
       }
 
       const validatedData = insertListingSchema.parse(req.body);
-      
+
       // Generate listing
       const generatedContent = await generateListing(validatedData);
-      
+
       // Save listing
-      const listing = await storage.createListing(userId, validatedData);
+      const listing = await storage.createListing(userId, validatedData, generatedContent.listing);
       await storage.updateUserListingCount(userId);
 
       return res.json({ 

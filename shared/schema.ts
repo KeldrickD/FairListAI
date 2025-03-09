@@ -13,6 +13,7 @@ export const users = pgTable("users", {
 export const listings = pgTable("listings", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
+  title: text("title").notNull(),
   propertyType: text("property_type").notNull(),
   bedrooms: integer("bedrooms").notNull(),
   bathrooms: integer("bathrooms").notNull(),
@@ -29,6 +30,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
 
 export const insertListingSchema = createInsertSchema(listings)
   .pick({
+    title: true,
     propertyType: true,
     bedrooms: true,
     bathrooms: true,
@@ -36,6 +38,7 @@ export const insertListingSchema = createInsertSchema(listings)
     features: true,
   })
   .extend({
+    title: z.string().min(3).max(100),
     propertyType: z.enum(['house', 'condo', 'apartment', 'townhouse']),
     bedrooms: z.coerce.number().min(0).max(20),
     bathrooms: z.coerce.number().min(0).max(20),

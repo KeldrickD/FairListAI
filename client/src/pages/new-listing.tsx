@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertListingSchema, type InsertListing } from "@shared/schema";
@@ -16,14 +17,22 @@ import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Link, useLocation } from "wouter";
+import { queryClient } from "@/lib/queryClient";
 
 export default function NewListing() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  
+  const [generatedListing, setGeneratedListing] = useState<string | null>(null);
+  const [compliance, setCompliance] = useState<{
+    isCompliant: boolean;
+    violations: string[];
+    suggestions: string[];
+  } | null>(null);
+
   const form = useForm<InsertListing>({
     resolver: zodResolver(insertListingSchema),
     defaultValues: {
+      title: "",
       propertyType: "house",
       bedrooms: 3,
       bathrooms: 2,
@@ -37,12 +46,14 @@ export default function NewListing() {
       const res = await apiRequest("POST", "/api/listings/generate", data);
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      setGeneratedListing(data.generated.listing);
+      setCompliance(data.generated.compliance);
+      queryClient.invalidateQueries({ queryKey: ['/api/listings'] });
       toast({
         title: "Success!",
         description: "Your listing has been generated and saved.",
       });
-      setLocation("/dashboard");
     },
     onError: (error: Error) => {
       toast({
@@ -86,6 +97,24 @@ export default function NewListing() {
                   onSubmit={form.handleSubmit((data) => generateMutation.mutate(data))}
                   className="space-y-6"
                 >
+                  <FormField
+                    control={form.control}
+                    name="title"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Listing Title</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="e.g., Modern Downtown Condo or Family Home in Suburbia" 
+                            className="h-12"
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
                   <FormField
                     control={form.control}
                     name="propertyType"
@@ -217,6 +246,38 @@ export default function NewListing() {
                   </div>
                 </form>
               </Form>
+
+              {generatedListing && (
+                <div className="mt-8">
+                  <Card className="shadow-lg border-primary/10">
+                    <CardHeader>
+                      <CardTitle>Generated Listing</CardTitle>
+                      <CardDescription>Review your generated listing below</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="rounded-lg bg-muted/30 p-6 border">
+                        <p className="whitespace-pre-wrap text-base leading-relaxed">
+                          {generatedListing}
+                        </p>
+                      </div>
+                      <div className="flex justify-end mt-4 space-x-4">
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            navigator.clipboard.writeText(generatedListing);
+                            toast({ description: "Listing copied to clipboard!" });
+                          }}
+                        >
+                          Copy Listing
+                        </Button>
+                        <Button onClick={() => setLocation("/dashboard")}>
+                          Go to Dashboard
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
