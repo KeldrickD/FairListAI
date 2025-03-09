@@ -59,7 +59,9 @@ const PricingTier = ({
       </ul>
       <Button
         className="w-full"
-        variant={isSelected ? "secondary" : (isPopular ? "default" : "outline")}
+        variant={isSelected 
+          ? (isPopular ? "outline" : "default")
+          : (isPopular ? "default" : "outline")}
         onClick={onSelect}
       >
         {isSelected ? "Selected" : "Select Plan"}
