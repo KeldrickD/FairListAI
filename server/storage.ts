@@ -5,6 +5,7 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUserListingCount(userId: number): Promise<void>;
+  upgradeToPremium(userId: number): Promise<User>;
   createListing(userId: number, listing: InsertListing, generatedListing: string): Promise<Listing>;
   updateListingTitle(userId: number, listingId: number, title: string): Promise<Listing>;
   getListings(userId: number): Promise<Listing[]>;
@@ -52,6 +53,18 @@ export class MemStorage implements IStorage {
 
     user.listingsThisMonth += 1;
     this.users.set(userId, user);
+  }
+
+  async upgradeToPremium(userId: number): Promise<User> {
+    const user = await this.getUser(userId);
+    if (!user) throw new Error("User not found");
+
+    const updatedUser: User = {
+      ...user,
+      isPremium: true
+    };
+    this.users.set(userId, updatedUser);
+    return updatedUser;
   }
 
   async createListing(userId: number, insertListing: InsertListing, generatedListing: string): Promise<Listing> {

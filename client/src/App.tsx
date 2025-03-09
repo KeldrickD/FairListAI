@@ -8,6 +8,7 @@ import Dashboard from "@/pages/dashboard";
 import NewListing from "@/pages/new-listing";
 import Login from "@/pages/login";
 import Register from "@/pages/register";
+import Premium from "@/pages/premium";
 import { ProtectedRoute } from "@/components/protected-route";
 import { AuthProvider } from "@/hooks/use-auth";
 
@@ -17,6 +18,7 @@ function Router() {
       <Route path="/" component={Home} />
       <ProtectedRoute path="/dashboard" component={Dashboard} />
       <ProtectedRoute path="/new" component={NewListing} />
+      <ProtectedRoute path="/premium" component={Premium} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       <Route component={NotFound} />

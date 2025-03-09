@@ -5,6 +5,15 @@ import { generateListing } from "./lib/openai";
 import { insertListingSchema, insertUserSchema } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcrypt";
+import Stripe from "stripe";
+
+if (!process.env.STRIPE_SECRET_KEY) {
+  throw new Error("Missing required environment variable: STRIPE_SECRET_KEY");
+}
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: "2023-10-16"
+});
 
 export async function registerRoutes(app: Express) {
   app.post("/api/auth/register", async (req, res) => {
@@ -74,6 +83,71 @@ export async function registerRoutes(app: Express) {
       }
       res.json({ message: "Logged out successfully" });
     });
+  });
+
+  app.post("/api/create-payment-intent", async (req, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+
+      if (user.isPremium) {
+        return res.status(400).json({ message: "User is already premium" });
+      }
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: 2999, // $29.99
+        currency: "usd",
+        metadata: {
+          userId: user.id.toString(),
+        },
+      });
+
+      return res.json({
+        clientSecret: paymentIntent.client_secret,
+      });
+    } catch (error) {
+      console.error("Error creating payment intent:", error);
+      return res.status(500).json({ 
+        message: error instanceof Error ? error.message : "Failed to create payment intent" 
+      });
+    }
+  });
+
+  app.post("/api/webhooks/stripe", async (req, res) => {
+    const sig = req.headers["stripe-signature"];
+    let event;
+
+    try {
+      event = stripe.webhooks.constructEvent(
+        req.body,
+        sig,
+        process.env.STRIPE_WEBHOOK_SECRET!
+      );
+    } catch (err) {
+      console.error("Webhook signature verification failed:", err);
+      return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    if (event.type === "payment_intent.succeeded") {
+      const paymentIntent = event.data.object;
+      const userId = parseInt(paymentIntent.metadata.userId);
+
+      try {
+        await storage.upgradeToPremium(userId);
+      } catch (error) {
+        console.error("Error upgrading user to premium:", error);
+        return res.status(500).json({ message: "Failed to upgrade user" });
+      }
+    }
+
+    res.json({ received: true });
   });
 
   app.post("/api/listings/generate", async (req, res) => {
