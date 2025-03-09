@@ -1,7 +1,8 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Crown, AlertCircle, CheckCircle, Plus, Pencil, Download } from "lucide-react";
+import { Loader2, Crown, AlertCircle, CheckCircle, Plus, Pencil, Download, Search, SortAsc, Filter } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -9,10 +10,15 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import type { Listing } from "@shared/schema";
-import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface ListingsResponse {
   listings: Listing[];
@@ -66,6 +72,9 @@ export default function Dashboard() {
   const { toast } = useToast();
   const [editingTitleId, setEditingTitleId] = useState<number | null>(null);
   const [editTitle, setEditTitle] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<"date" | "title" | "type">("date");
+  const [filterType, setFilterType] = useState<string>("all");
   const queryClient = useQueryClient();
 
   const listingsQuery = useQuery<ListingsResponse>({
@@ -111,8 +120,37 @@ export default function Dashboard() {
     );
   }
 
-  const { listings } = listingsQuery.data || { listings: [] };
-  const listingsThisMonth = listings.length;
+  const { listings: rawListings } = listingsQuery.data || { listings: [] };
+
+  // Filter listings
+  let listings = rawListings;
+  if (searchQuery) {
+    listings = listings.filter(listing =>
+      listing.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      listing.features.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      listing.generatedListing?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }
+
+  if (filterType !== "all") {
+    listings = listings.filter(listing => listing.propertyType === filterType);
+  }
+
+  // Sort listings
+  listings = [...listings].sort((a, b) => {
+    switch (sortBy) {
+      case "date":
+        return (b.generatedAt?.getTime() || 0) - (a.generatedAt?.getTime() || 0);
+      case "title":
+        return (a.title || "").localeCompare(b.title || "");
+      case "type":
+        return a.propertyType.localeCompare(b.propertyType);
+      default:
+        return 0;
+    }
+  });
+
+  const listingsThisMonth = rawListings.length;
   const isFreeTier = true;
   const remainingListings = isFreeTier ? `${5 - listingsThisMonth} remaining` : "Unlimited";
 
@@ -157,6 +195,45 @@ export default function Dashboard() {
                   Upgrade to Premium
                 </Button>
               )}
+            </div>
+          </div>
+
+          <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search listings..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 h-12"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Select value={sortBy} onValueChange={(value) => setSortBy(value as any)}>
+                <SelectTrigger className="w-[160px] h-12">
+                  <SortAsc className="mr-2 h-4 w-4" />
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="date">Date Created</SelectItem>
+                  <SelectItem value="title">Title</SelectItem>
+                  <SelectItem value="type">Property Type</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={filterType} onValueChange={setFilterType}>
+                <SelectTrigger className="w-[160px] h-12">
+                  <Filter className="mr-2 h-4 w-4" />
+                  <SelectValue placeholder="Filter type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="house">Houses</SelectItem>
+                  <SelectItem value="condo">Condos</SelectItem>
+                  <SelectItem value="apartment">Apartments</SelectItem>
+                  <SelectItem value="townhouse">Townhouses</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
@@ -216,6 +293,9 @@ export default function Dashboard() {
           <Card>
             <CardHeader>
               <CardTitle>Recent Listings</CardTitle>
+              <CardDescription>
+                {listings.length} listing{listings.length !== 1 ? 's' : ''} found
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-[400px] pr-4">
