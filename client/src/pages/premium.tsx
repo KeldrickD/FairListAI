@@ -33,47 +33,51 @@ const PricingTier = ({
   isPopular?: boolean;
   onSelect: () => void;
   isSelected: boolean;
-}) => (
-  <Card className={cn("relative", {
-    "border-primary": isSelected || isPopular,
-    "border-muted": !isSelected && !isPopular
-  })}>
-    {isPopular && !isSelected && (
-      <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-        <span className="bg-primary text-primary-foreground text-xs font-semibold px-3 py-1 rounded-full">
-          Most Popular
-        </span>
-      </div>
-    )}
-    <CardHeader>
-      <CardTitle className="flex items-baseline gap-2">
-        <span className="text-2xl font-bold">${(price / 100).toFixed(2)}</span>
-        <span className="text-sm text-muted-foreground">/month</span>
-      </CardTitle>
-      <CardDescription className="font-semibold text-lg">{name}</CardDescription>
-    </CardHeader>
-    <CardContent>
-      <ul className="space-y-2 mb-6">
-        {features.map((feature, i) => (
-          <li key={i} className="flex items-start gap-2">
-            <Check className={cn("h-5 w-5 flex-shrink-0 mt-0.5", {
-              "text-primary": isSelected || isPopular,
-              "text-muted-foreground": !isSelected && !isPopular
-            })} />
-            <span>{feature}</span>
-          </li>
-        ))}
-      </ul>
-      <Button
-        className="w-full"
-        variant={isSelected || isPopular ? "default" : "outline"}
-        onClick={onSelect}
-      >
-        {isSelected ? "Selected" : "Select Plan"}
-      </Button>
-    </CardContent>
-  </Card>
-);
+}) => {
+  const shouldShowPrimary = isSelected || (isPopular && !isSelected);
+
+  return (
+    <Card className={cn("relative", {
+      "border-primary": shouldShowPrimary,
+      "border-muted": !shouldShowPrimary
+    })}>
+      {isPopular && !isSelected && (
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+          <span className="bg-primary text-primary-foreground text-xs font-semibold px-3 py-1 rounded-full">
+            Most Popular
+          </span>
+        </div>
+      )}
+      <CardHeader>
+        <CardTitle className="flex items-baseline gap-2">
+          <span className="text-2xl font-bold">${(price / 100).toFixed(2)}</span>
+          <span className="text-sm text-muted-foreground">/month</span>
+        </CardTitle>
+        <CardDescription className="font-semibold text-lg">{name}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ul className="space-y-2 mb-6">
+          {features.map((feature, i) => (
+            <li key={i} className="flex items-start gap-2">
+              <Check className={cn("h-5 w-5 flex-shrink-0 mt-0.5", {
+                "text-primary": shouldShowPrimary,
+                "text-muted-foreground": !shouldShowPrimary
+              })} />
+              <span>{feature}</span>
+            </li>
+          ))}
+        </ul>
+        <Button
+          className="w-full"
+          variant={shouldShowPrimary ? "default" : "outline"}
+          onClick={onSelect}
+        >
+          {isSelected ? "Selected" : "Select Plan"}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+};
 
 function CheckoutForm({ selectedTier, selectedAddOns, total }: {
   selectedTier: keyof typeof SUBSCRIPTION_PRICES;
