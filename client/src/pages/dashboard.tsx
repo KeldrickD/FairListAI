@@ -78,7 +78,13 @@ export default function Dashboard() {
   const queryClient = useQueryClient();
 
   const listingsQuery = useQuery<ListingsResponse>({
-    queryKey: ['/api/listings']
+    queryKey: ['/api/listings'],
+    select: (data) => ({
+      listings: data.listings.map(listing => ({
+        ...listing,
+        generatedAt: listing.generatedAt ? new Date(listing.generatedAt) : null
+      }))
+    })
   });
 
   const updateTitleMutation = useMutation({
@@ -140,7 +146,8 @@ export default function Dashboard() {
   listings = [...listings].sort((a, b) => {
     switch (sortBy) {
       case "date":
-        return (b.generatedAt?.getTime() || 0) - (a.generatedAt?.getTime() || 0);
+        return ((b.generatedAt instanceof Date ? b.generatedAt : new Date(0)).getTime()) - 
+               ((a.generatedAt instanceof Date ? a.generatedAt : new Date(0)).getTime());
       case "title":
         return (a.title || "").localeCompare(b.title || "");
       case "type":
