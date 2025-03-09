@@ -178,7 +178,7 @@ function CheckoutForm({ selectedTier, selectedAddOns, total }: {
 }
 
 export default function PremiumPage() {
-  const [selectedTier, setSelectedTier] = useState<keyof typeof SUBSCRIPTION_PRICES>(SUBSCRIPTION_TIERS.BASIC);
+  const [selectedTier, setSelectedTier] = useState<keyof typeof SUBSCRIPTION_PRICES>(SUBSCRIPTION_TIERS.PRO);
   const [selectedAddOns, setSelectedAddOns] = useState<string[]>([]);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
