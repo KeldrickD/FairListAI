@@ -1,0 +1,226 @@
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { insertListingSchema, type InsertListing } from "@shared/schema";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { Loader2, Home as HomeIcon, Bath, Bed, Maximize2, Building2 } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
+import { Link, useLocation } from "wouter";
+
+export default function NewListing() {
+  const { toast } = useToast();
+  const [, setLocation] = useLocation();
+  
+  const form = useForm<InsertListing>({
+    resolver: zodResolver(insertListingSchema),
+    defaultValues: {
+      propertyType: "house",
+      bedrooms: 3,
+      bathrooms: 2,
+      squareFeet: 1500,
+      features: "",
+    },
+  });
+
+  const generateMutation = useMutation({
+    mutationFn: async (data: InsertListing) => {
+      const res = await apiRequest("POST", "/api/listings/generate", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success!",
+        description: "Your listing has been generated and saved.",
+      });
+      setLocation("/dashboard");
+    },
+    onError: (error: Error) => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message,
+      });
+    },
+  });
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+      {/* Navigation */}
+      <nav className="border-b bg-white/50 backdrop-blur-sm fixed w-full z-50">
+        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+          <Link href="/" className="flex items-center space-x-2">
+            <Building2 className="h-6 w-6 text-primary" />
+            <span className="font-semibold text-xl">ListingAI</span>
+          </Link>
+          <div className="flex items-center space-x-4">
+            <Button variant="ghost" asChild>
+              <Link href="/dashboard">Dashboard</Link>
+            </Button>
+            <Button variant="ghost">Support</Button>
+          </div>
+        </div>
+      </nav>
+
+      <main className="container mx-auto px-4 py-8 pt-24">
+        <div className="max-w-2xl mx-auto">
+          <Card className="shadow-lg border-primary/10">
+            <CardHeader>
+              <CardTitle className="text-2xl">Create New Listing</CardTitle>
+              <CardDescription>
+                Enter your property information below to generate a professional listing
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Form {...form}>
+                <form
+                  onSubmit={form.handleSubmit((data) => generateMutation.mutate(data))}
+                  className="space-y-6"
+                >
+                  <FormField
+                    control={form.control}
+                    name="propertyType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Property Type</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="h-12">
+                              <HomeIcon className="w-4 h-4 mr-2" />
+                              <SelectValue placeholder="Select property type" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="house">House</SelectItem>
+                            <SelectItem value="condo">Condo</SelectItem>
+                            <SelectItem value="apartment">Apartment</SelectItem>
+                            <SelectItem value="townhouse">Townhouse</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="bedrooms"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            <div className="flex items-center gap-2">
+                              <Bed className="w-4 h-4" />
+                              Bedrooms
+                            </div>
+                          </FormLabel>
+                          <FormControl>
+                            <Input type="number" className="h-12" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="bathrooms"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            <div className="flex items-center gap-2">
+                              <Bath className="w-4 h-4" />
+                              Bathrooms
+                            </div>
+                          </FormLabel>
+                          <FormControl>
+                            <Input type="number" className="h-12" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="squareFeet"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            <div className="flex items-center gap-2">
+                              <Maximize2 className="w-4 h-4" />
+                              Square Feet
+                            </div>
+                          </FormLabel>
+                          <FormControl>
+                            <Input type="number" className="h-12" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="features"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Key Features</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Describe notable features or paste an existing listing to improve (e.g., modern kitchen, hardwood floors, updated appliances)"
+                            className="h-48 resize-none"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="flex gap-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full h-12"
+                      onClick={() => setLocation("/dashboard")}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      className="w-full h-12"
+                      disabled={generateMutation.isPending}
+                    >
+                      {generateMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        "Generate Listing"
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
+        </div>
+      </main>
+    </div>
+  );
+}
