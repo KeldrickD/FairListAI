@@ -26,6 +26,7 @@ const PricingTier = ({
   isPopular,
   onSelect,
   isSelected,
+  selectedTier,
 }: {
   name: string;
   price: number;
@@ -33,15 +34,19 @@ const PricingTier = ({
   isPopular?: boolean;
   onSelect: () => void;
   isSelected: boolean;
+  selectedTier: keyof typeof SUBSCRIPTION_TIERS;
 }) => {
-  const shouldShowPrimary = isSelected || (isPopular && !isSelected);
+  // Show primary style if:
+  // 1. This plan is selected OR
+  // 2. This is the Pro plan AND no other plan is selected
+  const showPrimaryStyle = isSelected || (isPopular && selectedTier === SUBSCRIPTION_TIERS.PRO);
 
   return (
     <Card className={cn("relative", {
-      "border-primary": shouldShowPrimary,
-      "border-muted": !shouldShowPrimary
+      "border-primary": showPrimaryStyle,
+      "border-muted": !showPrimaryStyle
     })}>
-      {isPopular && !isSelected && (
+      {isPopular && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
           <span className="bg-primary text-primary-foreground text-xs font-semibold px-3 py-1 rounded-full">
             Most Popular
@@ -60,8 +65,8 @@ const PricingTier = ({
           {features.map((feature, i) => (
             <li key={i} className="flex items-start gap-2">
               <Check className={cn("h-5 w-5 flex-shrink-0 mt-0.5", {
-                "text-primary": shouldShowPrimary,
-                "text-muted-foreground": !shouldShowPrimary
+                "text-primary": showPrimaryStyle,
+                "text-muted-foreground": !showPrimaryStyle
               })} />
               <span>{feature}</span>
             </li>
@@ -69,7 +74,7 @@ const PricingTier = ({
         </ul>
         <Button
           className="w-full"
-          variant={shouldShowPrimary ? "default" : "outline"}
+          variant={showPrimaryStyle ? "default" : "outline"}
           onClick={onSelect}
         >
           {isSelected ? "Selected" : "Select Plan"}
@@ -258,6 +263,7 @@ export default function PremiumPage() {
             ]}
             onSelect={() => setSelectedTier(SUBSCRIPTION_TIERS.BASIC)}
             isSelected={selectedTier === SUBSCRIPTION_TIERS.BASIC}
+            selectedTier={selectedTier}
           />
           <PricingTier
             name="Pro"
@@ -272,6 +278,7 @@ export default function PremiumPage() {
             isPopular
             onSelect={() => setSelectedTier(SUBSCRIPTION_TIERS.PRO)}
             isSelected={selectedTier === SUBSCRIPTION_TIERS.PRO}
+            selectedTier={selectedTier}
           />
           <PricingTier
             name="Enterprise"
@@ -285,6 +292,7 @@ export default function PremiumPage() {
             ]}
             onSelect={() => setSelectedTier(SUBSCRIPTION_TIERS.ENTERPRISE)}
             isSelected={selectedTier === SUBSCRIPTION_TIERS.ENTERPRISE}
+            selectedTier={selectedTier}
           />
         </div>
 
