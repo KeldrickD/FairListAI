@@ -37,10 +37,10 @@ export const insertListingSchema = createInsertSchema(listings)
   })
   .extend({
     propertyType: z.enum(['house', 'condo', 'apartment', 'townhouse']),
-    bedrooms: z.number().min(0).max(20),
-    bathrooms: z.number().min(0).max(20),
-    squareFeet: z.number().min(100).max(50000),
-    features: z.string().min(10).max(1000),
+    bedrooms: z.coerce.number().min(0).max(20),
+    bathrooms: z.coerce.number().min(0).max(20),
+    squareFeet: z.coerce.number().min(100).max(50000),
+    features: z.string().min(10).max(5000),
   });
 
 export type User = typeof users.$inferSelect;
