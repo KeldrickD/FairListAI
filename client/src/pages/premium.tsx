@@ -36,9 +36,6 @@ const PricingTier = ({
   isSelected: boolean;
   selectedTier: keyof typeof SUBSCRIPTION_TIERS;
 }) => {
-  // Show primary style if:
-  // 1. This plan is selected OR
-  // 2. This is the Pro plan AND no other plan is selected
   const showPrimaryStyle = isSelected || (isPopular && selectedTier === SUBSCRIPTION_TIERS.PRO);
 
   return (
@@ -178,7 +175,7 @@ function CheckoutForm({ selectedTier, selectedAddOns, total }: {
 }
 
 export default function PremiumPage() {
-  const [selectedTier, setSelectedTier] = useState<keyof typeof SUBSCRIPTION_PRICES>(SUBSCRIPTION_TIERS.PRO);
+  const [selectedTier, setSelectedTier] = useState<keyof typeof SUBSCRIPTION_PRICES>(SUBSCRIPTION_TIERS.BASIC); // Changed default tier
   const [selectedAddOns, setSelectedAddOns] = useState<string[]>([]);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -263,6 +260,19 @@ export default function PremiumPage() {
             ]}
             onSelect={() => setSelectedTier(SUBSCRIPTION_TIERS.BASIC)}
             isSelected={selectedTier === SUBSCRIPTION_TIERS.BASIC}
+            selectedTier={selectedTier}
+          />
+          <PricingTier
+            name="Pay-Per-Use" // New plan
+            price={1000} //Example price, needs to be fetched from schema
+            features={[
+              "Pay only for what you use",
+              "Ideal for occasional users",
+              "Fair Housing compliant content",
+              "Email Support"
+            ]}
+            onSelect={() => setSelectedTier("payPerUse")} // Added new tier option
+            isSelected={selectedTier === "payPerUse"} // Added new tier option
             selectedTier={selectedTier}
           />
           <PricingTier

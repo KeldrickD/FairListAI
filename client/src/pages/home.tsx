@@ -271,7 +271,7 @@ export default function Home() {
             <div className="max-w-5xl mx-auto">
               <h2 className="text-3xl font-bold text-center mb-4">Pricing Plans</h2>
               <p className="text-center text-muted-foreground mb-12 max-w-3xl mx-auto">
-                Choose the plan that fits your business needs
+                Choose the plan that fits your business needseds
               </p>
 
               <div className="grid md:grid-cols-4 gap-8">

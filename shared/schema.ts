@@ -65,6 +65,7 @@ export type InsertListing = z.infer<typeof insertListingSchema>;
 export const SUBSCRIPTION_TIERS = {
   FREE: 'free',
   BASIC: 'basic',
+  PAY_PER_USE: 'pay_per_use',
   PRO: 'pro',
   ENTERPRISE: 'enterprise'
 } as const;
