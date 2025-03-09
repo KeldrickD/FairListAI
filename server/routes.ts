@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer } from "http";
 import { storage } from "./storage";
-import { generateListing } from "./lib/openai";
+import { generateListing, generateSEO, generateSocialMedia, generateVideoScript } from "./lib/openai";
 import { insertListingSchema, insertUserSchema, SUBSCRIPTION_TIERS, SUBSCRIPTION_PRICES, ADD_ON_PRICES } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcrypt";
@@ -204,16 +204,45 @@ export async function registerRoutes(app: Express) {
 
       const validatedData = insertListingSchema.parse(req.body);
 
-      // Generate listing
+      // Generate main listing content
       const generatedContent = await generateListing(validatedData);
+      let seoOptimized = null;
+      let socialMediaContent = null;
+      let videoScript = null;
 
-      // Save listing
-      const listing = await storage.createListing(userId, validatedData, generatedContent.listing);
+      // Generate add-on content if user has the features enabled
+      if (user.seoEnabled) {
+        seoOptimized = await generateSEO(validatedData, generatedContent.listing);
+      }
+
+      if (user.socialMediaEnabled) {
+        socialMediaContent = await generateSocialMedia(validatedData, generatedContent.listing);
+      }
+
+      if (user.videoScriptsEnabled) {
+        videoScript = await generateVideoScript(validatedData, generatedContent.listing);
+      }
+
+      // Save listing with add-on content
+      const listing = await storage.createListing(
+        userId,
+        validatedData,
+        generatedContent.listing,
+        seoOptimized,
+        socialMediaContent,
+        videoScript
+      );
+
       await storage.updateUserListingCount(userId);
 
       return res.json({
         listing,
-        generated: generatedContent
+        generated: {
+          ...generatedContent,
+          seoOptimized,
+          socialMediaContent,
+          videoScript
+        }
       });
     } catch (error) {
       console.error("Error generating listing:", error);

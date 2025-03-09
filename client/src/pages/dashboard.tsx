@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Crown, AlertCircle, CheckCircle, Plus, Pencil, Download, Search, SortAsc, Filter, Building2 } from "lucide-react";
+import { Loader2, Crown, AlertCircle, CheckCircle, Plus, Pencil, Download, Search, SortAsc, Filter, Building2, Sparkles, Video, Share2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -12,6 +13,8 @@ import { Link } from "wouter";
 import type { Listing } from "@shared/schema";
 import { Input } from "@/components/ui/input";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/use-auth";
+import { apiRequest } from "@/lib/queryClient";
 import {
   Select,
   SelectContent,
@@ -23,23 +26,6 @@ import {
 interface ListingsResponse {
   listings: Listing[];
 }
-
-const apiRequest = async (method: string, url: string, data?: any) => {
-  const response = await fetch(url, {
-    method,
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: data ? JSON.stringify(data) : undefined
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    const errorMessage = errorData.message || response.statusText;
-    throw new Error(errorMessage);
-  }
-  return await response.json();
-};
 
 const exportListing = (listing: Listing, format: 'text' | 'csv') => {
   let content = '';
@@ -57,6 +43,17 @@ const exportListing = (listing: Listing, format: 'text' | 'csv') => {
     content += `Square Feet: ${listing.squareFeet}\n\n`;
     content += `Features:\n${listing.features}\n\n`;
     content += `Generated Listing:\n${listing.generatedListing}\n`;
+
+    // Add add-on content if available
+    if (listing.seoOptimized) {
+      content += `\nSEO Optimized Content:\n${listing.seoOptimized}\n`;
+    }
+    if (listing.socialMediaContent) {
+      content += `\nSocial Media Content:\n${listing.socialMediaContent}\n`;
+    }
+    if (listing.videoScript) {
+      content += `\nVideo Script:\n${listing.videoScript}\n`;
+    }
   }
 
   const blob = new Blob([content], { type: 'text/plain' });
@@ -68,6 +65,79 @@ const exportListing = (listing: Listing, format: 'text' | 'csv') => {
   window.URL.revokeObjectURL(url);
 };
 
+function AddOnsStatus() {
+  const { user } = useAuth();
+
+  if (!user) return null;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Premium Add-ons</CardTitle>
+        <CardDescription>
+          Your activated premium features
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              <span className="font-medium">SEO Optimization</span>
+            </div>
+            {user.seoEnabled ? (
+              <Badge className="bg-green-500/10 text-green-600">
+                Active
+              </Badge>
+            ) : (
+              <Badge variant="secondary">Inactive</Badge>
+            )}
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Share2 className="h-5 w-5 text-primary" />
+              <span className="font-medium">Social Media Content</span>
+            </div>
+            {user.socialMediaEnabled ? (
+              <Badge className="bg-green-500/10 text-green-600">
+                Active
+              </Badge>
+            ) : (
+              <Badge variant="secondary">Inactive</Badge>
+            )}
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Video className="h-5 w-5 text-primary" />
+              <span className="font-medium">Video Scripts</span>
+            </div>
+            {user.videoScriptsEnabled ? (
+              <Badge className="bg-green-500/10 text-green-600">
+                Active
+              </Badge>
+            ) : (
+              <Badge variant="secondary">Inactive</Badge>
+            )}
+          </div>
+
+          {(!user.seoEnabled || !user.socialMediaEnabled || !user.videoScriptsEnabled) && (
+            <div className="mt-4 pt-4 border-t">
+              <Button variant="outline" className="w-full" asChild>
+                <Link href="/premium">
+                  <Crown className="mr-2 h-4 w-4" />
+                  Upgrade Features
+                </Link>
+              </Button>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function Dashboard() {
   const { toast } = useToast();
   const [editingTitleId, setEditingTitleId] = useState<number | null>(null);
@@ -76,6 +146,7 @@ export default function Dashboard() {
   const [sortBy, setSortBy] = useState<"date" | "title" | "type">("date");
   const [filterType, setFilterType] = useState<string>("all");
   const queryClient = useQueryClient();
+  const { user } = useAuth(); // Added useAuth hook
 
   const listingsQuery = useQuery<ListingsResponse>({
     queryKey: ['/api/listings'],
@@ -273,33 +344,34 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Quick Stats</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <dl className="grid grid-cols-2 gap-4">
-                  <div>
-                    <dt className="text-sm font-medium text-muted-foreground">
-                      Total Listings
-                    </dt>
-                    <dd className="text-2xl font-bold">
-                      {listings.length}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm font-medium text-muted-foreground">
-                      AI Generated
-                    </dt>
-                    <dd className="text-2xl font-bold">
-                      {listings.filter((l: Listing) => l.generatedListing).length}
-                    </dd>
-                  </div>
-                </dl>
-              </CardContent>
-            </Card>
+            <AddOnsStatus />
           </div>
 
+          <Card>
+            <CardHeader>
+              <CardTitle>Quick Stats</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <dl className="grid grid-cols-2 gap-4">
+                <div>
+                  <dt className="text-sm font-medium text-muted-foreground">
+                    Total Listings
+                  </dt>
+                  <dd className="text-2xl font-bold">
+                    {listings.length}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-medium text-muted-foreground">
+                    AI Generated
+                  </dt>
+                  <dd className="text-2xl font-bold">
+                    {listings.filter((l: Listing) => l.generatedListing).length}
+                  </dd>
+                </div>
+              </dl>
+            </CardContent>
+          </Card>
           <Card>
             <CardHeader>
               <CardTitle>Recent Listings</CardTitle>

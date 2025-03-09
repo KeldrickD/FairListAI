@@ -12,10 +12,11 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUserListingCount(userId: number): Promise<void>;
   upgradeToPremium(userId: number, tier?: keyof typeof SUBSCRIPTION_TIERS): Promise<User>;
-  createListing(userId: number, listing: InsertListing, generatedListing: string): Promise<Listing>;
+  createListing(userId: number, listing: InsertListing, generatedListing: string, seoOptimized: string | null, socialMediaContent: string | null, videoScript: string | null): Promise<Listing>;
   updateListingTitle(userId: number, listingId: number, title: string): Promise<Listing>;
   getListings(userId: number): Promise<Listing[]>;
   getUserListingCount(userId: number): Promise<number>;
+  updateUserAddOns(userId: number, addOns: string[]): Promise<User>;
 }
 
 export class MemStorage implements IStorage {
@@ -48,7 +49,7 @@ export class MemStorage implements IStorage {
       id, 
       isPremium: false,
       listingsThisMonth: 0,
-      subscriptionTier: SUBSCRIPTION_TIERS.BASIC, //Added default tier
+      subscriptionTier: SUBSCRIPTION_TIERS.BASIC, 
       seoEnabled: false,
       socialMediaEnabled: false,
       videoScriptsEnabled: false,
@@ -81,13 +82,23 @@ export class MemStorage implements IStorage {
     return updatedUser;
   }
 
-  async createListing(userId: number, insertListing: InsertListing, generatedListing: string): Promise<Listing> {
+  async createListing(
+    userId: number, 
+    insertListing: InsertListing, 
+    generatedListing: string,
+    seoOptimized: string | null = null,
+    socialMediaContent: string | null = null,
+    videoScript: string | null = null
+  ): Promise<Listing> {
     const id = this.currentListingId++;
     const listing: Listing = {
       ...insertListing,
       id,
       userId,
       generatedListing,
+      seoOptimized,
+      socialMediaContent,
+      videoScript,
       generatedAt: new Date()
     };
     this.listings.set(id, listing);
@@ -118,6 +129,21 @@ export class MemStorage implements IStorage {
     const user = await this.getUser(userId);
     if (!user) throw new Error("User not found");
     return user.listingsThisMonth;
+  }
+
+  async updateUserAddOns(userId: number, addOns: string[]): Promise<User> {
+    const user = await this.getUser(userId);
+    if (!user) throw new Error("User not found");
+
+    const updatedUser: User = {
+      ...user,
+      seoEnabled: addOns.includes('SEO_OPTIMIZATION'),
+      socialMediaEnabled: addOns.includes('SOCIAL_MEDIA'),
+      videoScriptsEnabled: addOns.includes('VIDEO_SCRIPT')
+    };
+
+    this.users.set(userId, updatedUser);
+    return updatedUser;
   }
 }
 
