@@ -11,6 +11,7 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Link, useLocation } from "wouter";
 import { Building2, Loader2 } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 
 const loginSchema = z.object({
   username: z.string().min(3).max(50),
@@ -22,6 +23,7 @@ type LoginForm = z.infer<typeof loginSchema>;
 export default function Login() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const { loginMutation } = useAuth();
 
   const form = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
@@ -31,26 +33,13 @@ export default function Login() {
     },
   });
 
-  const loginMutation = useMutation({
-    mutationFn: async (data: LoginForm) => {
-      const res = await apiRequest("POST", "/api/auth/login", data);
-      return res.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Success!",
-        description: "You have been logged in successfully.",
-      });
-      setLocation("/dashboard");
-    },
-    onError: (error: Error) => {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message,
-      });
-    },
-  });
+  const onSubmit = async (data: LoginForm) => {
+    loginMutation.mutate(data, {
+      onSuccess: () => {
+        setLocation("/dashboard");
+      }
+    });
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
@@ -80,7 +69,7 @@ export default function Login() {
             <CardContent>
               <Form {...form}>
                 <form
-                  onSubmit={form.handleSubmit((data) => loginMutation.mutate(data))}
+                  onSubmit={form.handleSubmit(onSubmit)}
                   className="space-y-6"
                 >
                   <FormField
