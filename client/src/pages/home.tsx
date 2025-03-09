@@ -16,6 +16,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { Link } from "wouter";
 
 export default function Home() {
   const { toast } = useToast();
@@ -69,6 +70,9 @@ export default function Home() {
             <span className="font-semibold text-xl">ListingAI</span>
           </div>
           <div className="flex items-center space-x-4">
+            <Button variant="ghost" asChild>
+              <Link href="/dashboard">Dashboard</Link>
+            </Button>
             <Button variant="ghost">Features</Button>
             <Button variant="ghost">Pricing</Button>
             <Button variant="ghost">Support</Button>
@@ -322,7 +326,7 @@ export default function Home() {
                     <CardHeader>
                       <div className="flex items-center gap-4">
                         <CardTitle className="text-2xl">Fair Housing Compliance</CardTitle>
-                        <Badge 
+                        <Badge
                           variant={compliance.isCompliant ? "default" : "destructive"}
                           className={cn(
                             "text-sm py-1",

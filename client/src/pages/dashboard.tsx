@@ -9,12 +9,16 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import type { Listing } from "@shared/schema";
 
+interface ListingsResponse {
+  listings: Listing[];
+}
+
 export default function Dashboard() {
   const { toast } = useToast();
 
-  const listingsQuery = useQuery({
+  const listingsQuery = useQuery<ListingsResponse, Error>({
     queryKey: ['/api/listings'],
-    onError: (error: Error) => {
+    onError: (error) => {
       toast({
         variant: "destructive",
         title: "Error",
@@ -44,9 +48,10 @@ export default function Dashboard() {
     );
   }
 
-  const { listings } = listingsQuery.data;
-  const user = listings.length > 0 ? listings[0].user : null;
-  const remainingListings = user?.isPremium ? "Unlimited" : `${5 - user?.listingsThisMonth} remaining`;
+  const { listings } = listingsQuery.data || { listings: [] };
+  const listingsThisMonth = listings.length;
+  const isFreeTier = true; // We'll implement this with actual user data later
+  const remainingListings = isFreeTier ? `${5 - listingsThisMonth} remaining` : "Unlimited";
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -60,8 +65,8 @@ export default function Dashboard() {
               Manage your listings and subscription
             </p>
           </div>
-          
-          {!user?.isPremium && (
+
+          {isFreeTier && (
             <Button className="bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700">
               <Crown className="mr-2 h-4 w-4" />
               Upgrade to Premium
@@ -74,18 +79,18 @@ export default function Dashboard() {
             <CardHeader>
               <CardTitle>Subscription Status</CardTitle>
               <CardDescription>
-                {user?.isPremium ? "Premium Plan" : "Free Plan"}
+                {isFreeTier ? "Free Plan" : "Premium Plan"}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {!user?.isPremium && (
+              {isFreeTier && (
                 <>
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span>Monthly Listings</span>
-                      <span className="font-medium">{user?.listingsThisMonth}/5</span>
+                      <span className="font-medium">{listingsThisMonth}/5</span>
                     </div>
-                    <Progress value={(user?.listingsThisMonth || 0) * 20} />
+                    <Progress value={listingsThisMonth * 20} />
                   </div>
                   <p className="text-sm text-muted-foreground mt-4">
                     {remainingListings} this month
@@ -111,10 +116,10 @@ export default function Dashboard() {
                 </div>
                 <div>
                   <dt className="text-sm font-medium text-muted-foreground">
-                    Compliant Listings
+                    AI Generated
                   </dt>
                   <dd className="text-2xl font-bold">
-                    {listings.filter((l: Listing) => !l.complianceIssues).length}
+                    {listings.filter((l) => l.generatedListing).length}
                   </dd>
                 </div>
               </dl>
@@ -129,7 +134,7 @@ export default function Dashboard() {
           <CardContent>
             <ScrollArea className="h-[400px] pr-4">
               <div className="space-y-4">
-                {listings.map((listing: Listing) => (
+                {listings.map((listing) => (
                   <div key={listing.id}>
                     <div className="flex items-start justify-between">
                       <div>
@@ -140,15 +145,13 @@ export default function Dashboard() {
                           {listing.bedrooms} bed • {listing.bathrooms} bath • {listing.squareFeet} sq ft
                         </p>
                       </div>
-                      {listing.complianceIssues ? (
-                        <AlertCircle className="h-5 w-5 text-destructive" />
-                      ) : (
-                        <CheckCircle className="h-5 w-5 text-green-500" />
-                      )}
+                      <CheckCircle className="h-5 w-5 text-green-500" />
                     </div>
-                    <p className="mt-2 text-sm">
-                      {listing.generatedListing}
-                    </p>
+                    {listing.generatedListing && (
+                      <p className="mt-2 text-sm">
+                        {listing.generatedListing}
+                      </p>
+                    )}
                     <Separator className="mt-4" />
                   </div>
                 ))}
