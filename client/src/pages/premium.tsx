@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { SUBSCRIPTION_TIERS, SUBSCRIPTION_PRICES, SUBSCRIPTION_LIMITS } from "@shared/schema";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
   throw new Error("Missing required environment variable: VITE_STRIPE_PUBLIC_KEY");
@@ -76,6 +77,11 @@ function CheckoutForm() {
     e.preventDefault();
 
     if (!stripe || !elements) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Stripe has not been properly initialized.",
+      });
       return;
     }
 
@@ -131,6 +137,7 @@ function CheckoutForm() {
 export default function PremiumPage() {
   const [selectedTier, setSelectedTier] = useState<keyof typeof SUBSCRIPTION_PRICES>(SUBSCRIPTION_TIERS.BASIC);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -138,12 +145,17 @@ export default function PremiumPage() {
       try {
         const response = await apiRequest("POST", "/api/create-payment-intent", {
           tier: selectedTier,
-          amount: SUBSCRIPTION_PRICES[selectedTier],
         });
         const data = await response.json();
-        setClientSecret(data.clientSecret);
+        if (response.ok) {
+          setClientSecret(data.clientSecret);
+          setError(null);
+        } else {
+          setError(data.message || "Failed to initialize payment");
+        }
       } catch (error) {
         console.error("Failed to initialize payment:", error);
+        setError("Failed to initialize payment. Please try again.");
       }
     };
 
@@ -276,6 +288,11 @@ export default function PremiumPage() {
         <Card>
           <CardHeader>
             <CardTitle>Complete Your Subscription</CardTitle>
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
           </CardHeader>
           <CardContent>
             {clientSecret ? (
@@ -285,12 +302,17 @@ export default function PremiumPage() {
                   clientSecret,
                   appearance: {
                     theme: 'stripe',
+                    variables: {
+                      colorPrimary: '#0099FF',
+                      colorBackground: '#ffffff',
+                      colorText: '#30313d',
+                    },
                   },
                 }}
               >
                 <CheckoutForm />
               </Elements>
-            ) : (
+            ) : error ? null : (
               <div className="flex justify-center p-8">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>

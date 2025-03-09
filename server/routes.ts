@@ -118,6 +118,7 @@ export async function registerRoutes(app: Express) {
       const paymentIntent = await stripe.paymentIntents.create({
         amount,
         currency: "usd",
+        payment_method_types: ['card'],
         metadata: {
           userId: user.id.toString(),
           tier,
@@ -130,8 +131,8 @@ export async function registerRoutes(app: Express) {
       });
     } catch (error) {
       console.error("Error creating payment intent:", error);
-      return res.status(500).json({
-        message: error instanceof Error ? error.message : "Failed to create payment intent"
+      return res.status(500).json({ 
+        message: error instanceof Error ? error.message : "Failed to create payment intent" 
       });
     }
   });
