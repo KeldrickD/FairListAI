@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { storage } from "./storage";
 
 declare module "express-session" {
   interface SessionData {
@@ -18,6 +19,7 @@ app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
   res.header('Access-Control-Allow-Headers', 'Content-Type');
+  res.header('Access-Control-Allow-Credentials', 'true');
   next();
 });
 
@@ -33,6 +35,22 @@ app.use(
     }
   })
 );
+
+// Temporary: Create a test user and set session
+app.use(async (req, res, next) => {
+  if (!req.session.userId) {
+    try {
+      const testUser = await storage.createUser({
+        username: "testuser",
+        password: "testpass"
+      });
+      req.session.userId = testUser.id;
+    } catch (error) {
+      console.error("Failed to create test user:", error);
+    }
+  }
+  next();
+});
 
 // Logging middleware
 app.use((req, res, next) => {
