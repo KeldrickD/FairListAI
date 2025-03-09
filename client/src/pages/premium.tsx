@@ -87,6 +87,7 @@ const PricingTier = ({
   );
 };
 
+// Update the CheckoutForm to include better error handling
 function CheckoutForm({ selectedTier, selectedAddOns, total }: {
   selectedTier: keyof typeof SUBSCRIPTION_TIERS;
   selectedAddOns: string[];
@@ -120,17 +121,19 @@ function CheckoutForm({ selectedTier, selectedAddOns, total }: {
       });
 
       if (error) {
+        console.error('Payment error:', error);
         toast({
           variant: "destructive",
           title: "Payment failed",
-          description: error.message,
+          description: error.message || "An unexpected error occurred during payment.",
         });
       }
     } catch (error) {
+      console.error('Payment error:', error);
       toast({
         variant: "destructive",
         title: "Payment failed",
-        description: "An unexpected error occurred.",
+        description: error instanceof Error ? error.message : "An unexpected error occurred during payment.",
       });
     } finally {
       setIsLoading(false);

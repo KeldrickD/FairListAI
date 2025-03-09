@@ -126,6 +126,8 @@ export async function registerRoutes(app: Express) {
         });
       }
 
+      console.log('Creating payment intent:', { tier, amount, addOns }); // Add logging
+
       const paymentIntent = await stripe.paymentIntents.create({
         amount,
         currency: "usd",
