@@ -103,17 +103,26 @@ export async function registerRoutes(app: Express) {
       }
 
       const { tier, addOns = [] } = req.body;
-      if (!tier || !SUBSCRIPTION_PRICES[tier]) {
+
+      // Validate the tier is supported
+      if (!tier || !Object.values(SUBSCRIPTION_TIERS).includes(tier)) {
         return res.status(400).json({ message: "Invalid subscription tier" });
       }
 
       // Calculate total amount including add-ons
-      let amount = SUBSCRIPTION_PRICES[tier];
-      addOns.forEach(addon => {
-        if (ADD_ON_PRICES[addon]) {
-          amount += ADD_ON_PRICES[addon];
-        }
-      });
+      let amount;
+      if (tier === SUBSCRIPTION_TIERS.PAY_PER_USE) {
+        amount = 500; // $5.00 per listing
+      } else {
+        // For subscription tiers, use the subscription prices
+        amount = SUBSCRIPTION_PRICES[tier.toLowerCase()];
+        // Add any selected add-ons
+        addOns.forEach(addon => {
+          if (ADD_ON_PRICES[addon]) {
+            amount += ADD_ON_PRICES[addon];
+          }
+        });
+      }
 
       const paymentIntent = await stripe.paymentIntents.create({
         amount,
