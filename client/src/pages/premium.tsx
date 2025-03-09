@@ -276,7 +276,7 @@ export default function PremiumPage() {
         <div className="grid md:grid-cols-4 gap-8 mb-12">
           <PricingTier
             name="Pay-Per-Use"
-            price={SUBSCRIPTION_PRICES.PAY_PER_USE}
+            price={500} // $5.00
             features={[
               "Pay as you go",
               "All standard features",
@@ -289,7 +289,7 @@ export default function PremiumPage() {
           />
           <PricingTier
             name="Basic"
-            price={SUBSCRIPTION_PRICES.BASIC}
+            price={2900} // $29.00
             features={[
               "10 listings per month",
               "SEO optimization",
@@ -302,7 +302,7 @@ export default function PremiumPage() {
           />
           <PricingTier
             name="Pro"
-            price={SUBSCRIPTION_PRICES.PRO}
+            price={9900} // $99.00
             features={[
               "50 listings per month",
               "SEO optimization",
@@ -317,7 +317,7 @@ export default function PremiumPage() {
           />
           <PricingTier
             name="Enterprise"
-            price={SUBSCRIPTION_PRICES.ENTERPRISE}
+            price={49900} // $499.00
             features={[
               "Unlimited listings",
               "API access",
