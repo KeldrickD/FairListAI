@@ -14,7 +14,7 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Basic CORS setup for development
+// CORS setup for development
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
@@ -36,19 +36,8 @@ app.use(
   })
 );
 
-// Temporary: Create a test user and set session
-app.use(async (req, res, next) => {
-  if (!req.session.userId) {
-    try {
-      const testUser = await storage.createUser({
-        username: "testuser",
-        password: "testpass"
-      });
-      req.session.userId = testUser.id;
-    } catch (error) {
-      console.error("Failed to create test user:", error);
-    }
-  }
+// Remove the temporary test user creation since we now have proper auth
+app.use((req, res, next) => {
   next();
 });
 
