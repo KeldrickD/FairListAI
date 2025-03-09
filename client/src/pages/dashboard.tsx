@@ -146,7 +146,7 @@ export default function Dashboard() {
   listings = [...listings].sort((a, b) => {
     switch (sortBy) {
       case "date":
-        return ((b.generatedAt instanceof Date ? b.generatedAt : new Date(0)).getTime()) - 
+        return ((b.generatedAt instanceof Date ? b.generatedAt : new Date(0)).getTime()) -
                ((a.generatedAt instanceof Date ? a.generatedAt : new Date(0)).getTime());
       case "title":
         return (a.title || "").localeCompare(b.title || "");
@@ -197,9 +197,11 @@ export default function Dashboard() {
               </Button>
 
               {isFreeTier && (
-                <Button className="bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700">
-                  <Crown className="mr-2 h-4 w-4" />
-                  Upgrade to Premium
+                <Button className="bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700" asChild>
+                  <Link href="/premium">
+                    <Crown className="mr-2 h-4 w-4" />
+                    Upgrade to Premium
+                  </Link>
                 </Button>
               )}
             </div>
