@@ -17,15 +17,8 @@ interface ListingsResponse {
 export default function Dashboard() {
   const { toast } = useToast();
 
-  const listingsQuery = useQuery<ListingsResponse, Error>({
-    queryKey: ['/api/listings'],
-    onError: (error) => {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message,
-      });
-    },
+  const listingsQuery = useQuery<ListingsResponse>({
+    queryKey: ['/api/listings']
   });
 
   if (listingsQuery.isLoading) {
@@ -144,7 +137,7 @@ export default function Dashboard() {
                       AI Generated
                     </dt>
                     <dd className="text-2xl font-bold">
-                      {listings.filter((l) => l.generatedListing).length}
+                      {listings.filter((l: Listing) => l.generatedListing).length}
                     </dd>
                   </div>
                 </dl>
@@ -159,7 +152,7 @@ export default function Dashboard() {
             <CardContent>
               <ScrollArea className="h-[400px] pr-4">
                 <div className="space-y-4">
-                  {listings.map((listing) => (
+                  {listings.map((listing: Listing) => (
                     <div key={listing.id}>
                       <div className="flex items-start justify-between">
                         <div>
