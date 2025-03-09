@@ -74,7 +74,7 @@ export default function NewListing() {
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center space-x-2">
             <Building2 className="h-6 w-6 text-primary" />
-            <span className="font-semibold text-xl">ListingAI</span>
+            <span className="font-semibold text-xl">Listing Genie</span>
           </Link>
           <div className="flex items-center space-x-4">
             <Button variant="ghost" asChild>

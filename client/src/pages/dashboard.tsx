@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Crown, AlertCircle, CheckCircle, Plus, Pencil, Download, Search, SortAsc, Filter } from "lucide-react";
+import { Loader2, Crown, AlertCircle, CheckCircle, Plus, Pencil, Download, Search, SortAsc, Filter, Building2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -166,7 +166,8 @@ export default function Dashboard() {
       <nav className="border-b bg-white/50 backdrop-blur-sm fixed w-full z-50">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center space-x-2">
-            <span className="font-semibold text-xl">ListingAI</span>
+            <Building2 className="h-6 w-6 text-primary" />
+            <span className="font-semibold text-xl">Listing Genie</span>
           </Link>
           <div className="flex items-center space-x-4">
             <Button variant="ghost">Features</Button>
