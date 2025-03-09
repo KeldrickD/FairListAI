@@ -10,6 +10,10 @@ import { apiRequest } from "@/lib/queryClient";
 import { SUBSCRIPTION_TIERS, SUBSCRIPTION_PRICES, SUBSCRIPTION_LIMITS } from "@shared/schema";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
+  throw new Error("Missing required environment variable: VITE_STRIPE_PUBLIC_KEY");
+}
+
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 const PricingTier = ({

@@ -15,6 +15,18 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: "2023-10-16"
 });
 
+// Define subscription tiers and prices.  These would ideally come from a config file or database.
+const SUBSCRIPTION_TIERS = {
+  BASIC: "basic",
+  PREMIUM: "premium",
+};
+
+const SUBSCRIPTION_PRICES = {
+  [SUBSCRIPTION_TIERS.BASIC]: 0, // Free tier
+  [SUBSCRIPTION_TIERS.PREMIUM]: 2999, // $29.99
+};
+
+
 export async function registerRoutes(app: Express) {
   app.post("/api/auth/register", async (req, res) => {
     try {
@@ -41,8 +53,8 @@ export async function registerRoutes(app: Express) {
       return res.status(201).json({ user });
     } catch (error) {
       console.error("Registration error:", error);
-      return res.status(400).json({ 
-        message: error instanceof Error ? error.message : "Failed to register" 
+      return res.status(400).json({
+        message: error instanceof Error ? error.message : "Failed to register"
       });
     }
   });
@@ -69,8 +81,8 @@ export async function registerRoutes(app: Express) {
       return res.json({ user });
     } catch (error) {
       console.error("Login error:", error);
-      return res.status(400).json({ 
-        message: error instanceof Error ? error.message : "Failed to login" 
+      return res.status(400).json({
+        message: error instanceof Error ? error.message : "Failed to login"
       });
     }
   });
@@ -101,11 +113,15 @@ export async function registerRoutes(app: Express) {
         return res.status(400).json({ message: "User is already premium" });
       }
 
+      const { tier } = req.body;
+      const amount = SUBSCRIPTION_PRICES[tier] || SUBSCRIPTION_PRICES.BASIC;
+
       const paymentIntent = await stripe.paymentIntents.create({
-        amount: 2999, // $29.99
+        amount,
         currency: "usd",
         metadata: {
           userId: user.id.toString(),
+          tier,
         },
       });
 
@@ -114,8 +130,8 @@ export async function registerRoutes(app: Express) {
       });
     } catch (error) {
       console.error("Error creating payment intent:", error);
-      return res.status(500).json({ 
-        message: error instanceof Error ? error.message : "Failed to create payment intent" 
+      return res.status(500).json({
+        message: error instanceof Error ? error.message : "Failed to create payment intent"
       });
     }
   });
@@ -138,9 +154,10 @@ export async function registerRoutes(app: Express) {
     if (event.type === "payment_intent.succeeded") {
       const paymentIntent = event.data.object;
       const userId = parseInt(paymentIntent.metadata.userId);
+      const tier = paymentIntent.metadata.tier || SUBSCRIPTION_TIERS.BASIC;
 
       try {
-        await storage.upgradeToPremium(userId);
+        await storage.upgradeToPremium(userId, tier);
       } catch (error) {
         console.error("Error upgrading user to premium:", error);
         return res.status(500).json({ message: "Failed to upgrade user" });
@@ -164,8 +181,8 @@ export async function registerRoutes(app: Express) {
 
       // Check free tier limits
       if (!user.isPremium && user.listingsThisMonth >= 5) {
-        return res.status(403).json({ 
-          message: "Free tier limit reached. Please upgrade to premium for unlimited listings." 
+        return res.status(403).json({
+          message: "Free tier limit reached. Please upgrade to premium for unlimited listings."
         });
       }
 
@@ -178,14 +195,14 @@ export async function registerRoutes(app: Express) {
       const listing = await storage.createListing(userId, validatedData, generatedContent.listing);
       await storage.updateUserListingCount(userId);
 
-      return res.json({ 
+      return res.json({
         listing,
         generated: generatedContent
       });
     } catch (error) {
       console.error("Error generating listing:", error);
-      return res.status(400).json({ 
-        message: error instanceof Error ? error.message : "Failed to generate listing" 
+      return res.status(400).json({
+        message: error instanceof Error ? error.message : "Failed to generate listing"
       });
     }
   });
@@ -204,8 +221,8 @@ export async function registerRoutes(app: Express) {
       return res.json({ listing });
     } catch (error) {
       console.error("Error updating listing:", error);
-      return res.status(400).json({ 
-        message: error instanceof Error ? error.message : "Failed to update listing" 
+      return res.status(400).json({
+        message: error instanceof Error ? error.message : "Failed to update listing"
       });
     }
   });
@@ -221,8 +238,8 @@ export async function registerRoutes(app: Express) {
       return res.json({ listings });
     } catch (error) {
       console.error("Error fetching listings:", error);
-      return res.status(400).json({ 
-        message: error instanceof Error ? error.message : "Failed to fetch listings" 
+      return res.status(400).json({
+        message: error instanceof Error ? error.message : "Failed to fetch listings"
       });
     }
   });

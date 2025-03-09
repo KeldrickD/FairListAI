@@ -1,11 +1,17 @@
 import { users, type User, type InsertUser, listings, type Listing, type InsertListing } from "@shared/schema";
 
+enum SUBSCRIPTION_TIERS {
+  BASIC = "basic",
+  PRO = "pro",
+  ENTERPRISE = "enterprise",
+}
+
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUserListingCount(userId: number): Promise<void>;
-  upgradeToPremium(userId: number): Promise<User>;
+  upgradeToPremium(userId: number, tier?: keyof typeof SUBSCRIPTION_TIERS): Promise<User>;
   createListing(userId: number, listing: InsertListing, generatedListing: string): Promise<Listing>;
   updateListingTitle(userId: number, listingId: number, title: string): Promise<Listing>;
   getListings(userId: number): Promise<Listing[]>;
@@ -41,7 +47,11 @@ export class MemStorage implements IStorage {
       ...insertUser, 
       id, 
       isPremium: false,
-      listingsThisMonth: 0
+      listingsThisMonth: 0,
+      subscriptionTier: SUBSCRIPTION_TIERS.BASIC, //Added default tier
+      seoEnabled: false,
+      socialMediaEnabled: false,
+      videoScriptsEnabled: false,
     };
     this.users.set(id, user);
     return user;
@@ -55,13 +65,17 @@ export class MemStorage implements IStorage {
     this.users.set(userId, user);
   }
 
-  async upgradeToPremium(userId: number): Promise<User> {
+  async upgradeToPremium(userId: number, tier: keyof typeof SUBSCRIPTION_TIERS = SUBSCRIPTION_TIERS.BASIC): Promise<User> {
     const user = await this.getUser(userId);
     if (!user) throw new Error("User not found");
 
     const updatedUser: User = {
       ...user,
-      isPremium: true
+      isPremium: true,
+      subscriptionTier: tier,
+      seoEnabled: tier === SUBSCRIPTION_TIERS.PRO || tier === SUBSCRIPTION_TIERS.ENTERPRISE,
+      socialMediaEnabled: tier === SUBSCRIPTION_TIERS.PRO || tier === SUBSCRIPTION_TIERS.ENTERPRISE,
+      videoScriptsEnabled: tier === SUBSCRIPTION_TIERS.ENTERPRISE,
     };
     this.users.set(userId, updatedUser);
     return updatedUser;
