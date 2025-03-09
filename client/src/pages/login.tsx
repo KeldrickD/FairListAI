@@ -7,8 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
 import { Link, useLocation } from "wouter";
 import { Building2, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
@@ -34,11 +32,14 @@ export default function Login() {
   });
 
   const onSubmit = async (data: LoginForm) => {
-    loginMutation.mutate(data, {
-      onSuccess: () => {
-        setLocation("/dashboard");
-      }
-    });
+    try {
+      await loginMutation.mutateAsync(data);
+      // Only redirect if the mutation was successful
+      setLocation("/dashboard");
+    } catch (error) {
+      // Error is already handled by the mutation's onError callback
+      console.error("Login error:", error);
+    }
   };
 
   return (
