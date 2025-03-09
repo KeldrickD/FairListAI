@@ -37,7 +37,7 @@ const PricingTier = ({
   isSelected: boolean;
   selectedTier: keyof typeof SUBSCRIPTION_TIERS;
 }) => {
-  const showPrimaryStyle = isSelected || (isPopular && !isSelected);
+  const showPrimaryStyle = isSelected || (isPopular && selectedTier === SUBSCRIPTION_TIERS.PRO);
   const isPricePerListing = name === "Pay-Per-Use";
 
   return (
@@ -86,7 +86,7 @@ const PricingTier = ({
 };
 
 function CheckoutForm({ selectedTier, selectedAddOns, total }: {
-  selectedTier: keyof typeof SUBSCRIPTION_PRICES;
+  selectedTier: keyof typeof SUBSCRIPTION_TIERS;
   selectedAddOns: string[];
   total: number;
 }) {
@@ -141,8 +141,8 @@ function CheckoutForm({ selectedTier, selectedAddOns, total }: {
         <h3 className="font-semibold mb-2">Order Summary</h3>
         <div className="space-y-2">
           <div className="flex justify-between">
-            <span>{selectedTier.charAt(0).toUpperCase() + selectedTier.slice(1)} Plan</span>
-            <span>${(SUBSCRIPTION_PRICES[selectedTier] / 100).toFixed(2)}</span>
+            <span>{selectedTier === SUBSCRIPTION_TIERS.PAY_PER_USE ? "Pay-Per-Use Plan" : `${selectedTier.charAt(0).toUpperCase() + selectedTier.slice(1)} Plan`}</span>
+            <span>${(selectedTier === SUBSCRIPTION_TIERS.PAY_PER_USE ? 5 : total / 100).toFixed(2)}{selectedTier === SUBSCRIPTION_TIERS.PAY_PER_USE ? "/listing" : "/month"}</span>
           </div>
           {selectedAddOns.map((addon) => (
             <div key={addon} className="flex justify-between text-sm">
@@ -153,7 +153,7 @@ function CheckoutForm({ selectedTier, selectedAddOns, total }: {
           <div className="border-t pt-2 mt-2">
             <div className="flex justify-between font-semibold">
               <span>Total</span>
-              <span>${(total / 100).toFixed(2)}/month</span>
+              <span>${selectedTier === SUBSCRIPTION_TIERS.PAY_PER_USE ? "5.00/listing" : `${(total / 100).toFixed(2)}/month`}</span>
             </div>
           </div>
         </div>
@@ -171,7 +171,7 @@ function CheckoutForm({ selectedTier, selectedAddOns, total }: {
             Processing...
           </>
         ) : (
-          `Pay $${(total / 100).toFixed(2)}`
+          `Pay ${selectedTier === SUBSCRIPTION_TIERS.PAY_PER_USE ? "$5.00/listing" : `$${(total / 100).toFixed(2)}/month`}`
         )}
       </Button>
     </form>
