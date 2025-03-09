@@ -116,7 +116,11 @@ function CheckoutForm({ selectedTier, selectedAddOns, total }: {
       const { error } = await stripe.confirmPayment({
         elements,
         confirmParams: {
+          // Specify the complete URL including protocol and host
           return_url: `${window.location.origin}/dashboard`,
+          payment_method_data: {
+            billing_details: {} // Add empty billing details to ensure test mode
+          }
         },
       });
 
