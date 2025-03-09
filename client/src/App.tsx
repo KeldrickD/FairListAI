@@ -8,13 +8,15 @@ import Dashboard from "@/pages/dashboard";
 import NewListing from "@/pages/new-listing";
 import Login from "@/pages/login";
 import Register from "@/pages/register";
+import { ProtectedRoute } from "@/components/protected-route";
+import { AuthProvider } from "@/hooks/use-auth";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
-      <Route path="/dashboard" component={Dashboard} />
-      <Route path="/new" component={NewListing} />
+      <ProtectedRoute path="/dashboard" component={Dashboard} />
+      <ProtectedRoute path="/new" component={NewListing} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       <Route component={NotFound} />
@@ -25,8 +27,10 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Router />
-      <Toaster />
+      <AuthProvider>
+        <Router />
+        <Toaster />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
