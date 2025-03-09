@@ -97,6 +97,7 @@ function CheckoutForm({ selectedTier, selectedAddOns, total }: {
   const elements = useElements();
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const [location] = useLocation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -113,13 +114,20 @@ function CheckoutForm({ selectedTier, selectedAddOns, total }: {
     setIsLoading(true);
 
     try {
+      // Get the base URL for the application
+      const baseUrl = window.location.origin;
+      const returnUrl = new URL('/dashboard', baseUrl).toString();
+
       const { error } = await stripe.confirmPayment({
         elements,
         confirmParams: {
-          // Specify the complete URL including protocol and host
-          return_url: `${window.location.origin}/dashboard`,
+          return_url: returnUrl,
           payment_method_data: {
-            billing_details: {} // Add empty billing details to ensure test mode
+            billing_details: {
+              address: {
+                country: 'US', // Default to US for test mode
+              }
+            }
           }
         },
       });
@@ -447,6 +455,9 @@ export default function PremiumPage() {
                       colorText: '#30313d',
                     },
                   },
+                  mode: 'payment',
+                  currency: 'usd',
+                  paymentMethodCreation: 'manual'
                 }}
               >
                 <CheckoutForm
