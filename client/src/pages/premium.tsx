@@ -11,6 +11,7 @@ import { SUBSCRIPTION_TIERS, SUBSCRIPTION_PRICES, SUBSCRIPTION_LIMITS, ADD_ON_PR
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
 
 if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
   throw new Error("Missing required environment variable: VITE_STRIPE_PUBLIC_KEY");
@@ -33,8 +34,11 @@ const PricingTier = ({
   onSelect: () => void;
   isSelected: boolean;
 }) => (
-  <Card className={`relative ${isPopular ? 'border-primary' : ''}`}>
-    {isPopular && (
+  <Card className={cn("relative", {
+    "border-primary": isSelected || isPopular,
+    "border-muted": !isSelected && !isPopular
+  })}>
+    {isPopular && !isSelected && (
       <div className="absolute -top-3 left-1/2 -translate-x-1/2">
         <span className="bg-primary text-primary-foreground text-xs font-semibold px-3 py-1 rounded-full">
           Most Popular
@@ -52,16 +56,17 @@ const PricingTier = ({
       <ul className="space-y-2 mb-6">
         {features.map((feature, i) => (
           <li key={i} className="flex items-start gap-2">
-            <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+            <Check className={cn("h-5 w-5 flex-shrink-0 mt-0.5", {
+              "text-primary": isSelected || isPopular,
+              "text-muted-foreground": !isSelected && !isPopular
+            })} />
             <span>{feature}</span>
           </li>
         ))}
       </ul>
       <Button
         className="w-full"
-        variant={isSelected 
-          ? (isPopular ? "outline" : "default")
-          : (isPopular ? "default" : "outline")}
+        variant={isSelected || isPopular ? "default" : "outline"}
         onClick={onSelect}
       >
         {isSelected ? "Selected" : "Select Plan"}
