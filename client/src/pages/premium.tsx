@@ -7,9 +7,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Loader2, Star, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { SUBSCRIPTION_TIERS, SUBSCRIPTION_PRICES, SUBSCRIPTION_LIMITS } from "@shared/schema";
+import { SUBSCRIPTION_TIERS, SUBSCRIPTION_PRICES, SUBSCRIPTION_LIMITS, ADD_ON_PRICES } from "@shared/schema";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Checkbox } from "@/components/ui/checkbox";
 
 if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
   throw new Error("Missing required environment variable: VITE_STRIPE_PUBLIC_KEY");
@@ -67,7 +68,11 @@ const PricingTier = ({
   </Card>
 );
 
-function CheckoutForm() {
+function CheckoutForm({ selectedTier, selectedAddOns, total }: {
+  selectedTier: keyof typeof SUBSCRIPTION_PRICES;
+  selectedAddOns: string[];
+  total: number;
+}) {
   const stripe = useStripe();
   const elements = useElements();
   const [isLoading, setIsLoading] = useState(false);
@@ -115,6 +120,28 @@ function CheckoutForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="rounded-lg bg-muted/30 p-4 mb-4">
+        <h3 className="font-semibold mb-2">Order Summary</h3>
+        <div className="space-y-2">
+          <div className="flex justify-between">
+            <span>{selectedTier.charAt(0).toUpperCase() + selectedTier.slice(1)} Plan</span>
+            <span>${(SUBSCRIPTION_PRICES[selectedTier] / 100).toFixed(2)}</span>
+          </div>
+          {selectedAddOns.map((addon) => (
+            <div key={addon} className="flex justify-between text-sm">
+              <span>{addon.split('_').join(' ').toLowerCase()}</span>
+              <span>${(ADD_ON_PRICES[addon] / 100).toFixed(2)}</span>
+            </div>
+          ))}
+          <div className="border-t pt-2 mt-2">
+            <div className="flex justify-between font-semibold">
+              <span>Total</span>
+              <span>${(total / 100).toFixed(2)}/month</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <PaymentElement />
       <Button
         type="submit"
@@ -127,7 +154,7 @@ function CheckoutForm() {
             Processing...
           </>
         ) : (
-          "Subscribe Now"
+          `Pay $${(total / 100).toFixed(2)}`
         )}
       </Button>
     </form>
@@ -136,15 +163,20 @@ function CheckoutForm() {
 
 export default function PremiumPage() {
   const [selectedTier, setSelectedTier] = useState<keyof typeof SUBSCRIPTION_PRICES>(SUBSCRIPTION_TIERS.BASIC);
+  const [selectedAddOns, setSelectedAddOns] = useState<string[]>([]);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
+
+  const total = SUBSCRIPTION_PRICES[selectedTier] +
+    selectedAddOns.reduce((sum, addon) => sum + (ADD_ON_PRICES[addon] || 0), 0);
 
   useEffect(() => {
     const initializePayment = async () => {
       try {
         const response = await apiRequest("POST", "/api/create-payment-intent", {
           tier: selectedTier,
+          addOns: selectedAddOns
         });
         const data = await response.json();
         if (response.ok) {
@@ -162,7 +194,7 @@ export default function PremiumPage() {
     if (!user?.isPremium) {
       initializePayment();
     }
-  }, [user, selectedTier]);
+  }, [user, selectedTier, selectedAddOns]);
 
   if (user?.isPremium) {
     return (
@@ -254,28 +286,72 @@ export default function PremiumPage() {
           </CardHeader>
           <CardContent>
             <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
-              <Card>
+              <Card className="relative">
                 <CardHeader>
-                  <CardTitle className="text-lg">SEO Optimization</CardTitle>
-                  <CardDescription>$10 per listing</CardDescription>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <CardTitle className="text-lg">SEO Optimization</CardTitle>
+                      <CardDescription>${(ADD_ON_PRICES.SEO_OPTIMIZATION / 100).toFixed(2)} per listing</CardDescription>
+                    </div>
+                    <Checkbox
+                      checked={selectedAddOns.includes('SEO_OPTIMIZATION')}
+                      onCheckedChange={(checked) => {
+                        setSelectedAddOns(prev =>
+                          checked
+                            ? [...prev, 'SEO_OPTIMIZATION']
+                            : prev.filter(a => a !== 'SEO_OPTIMIZATION')
+                        );
+                      }}
+                    />
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm">Optimize your listings for search engines and MLS platforms</p>
                 </CardContent>
               </Card>
-              <Card>
+
+              <Card className="relative">
                 <CardHeader>
-                  <CardTitle className="text-lg">Social Media Package</CardTitle>
-                  <CardDescription>$15 per listing</CardDescription>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <CardTitle className="text-lg">Social Media Package</CardTitle>
+                      <CardDescription>${(ADD_ON_PRICES.SOCIAL_MEDIA / 100).toFixed(2)} per listing</CardDescription>
+                    </div>
+                    <Checkbox
+                      checked={selectedAddOns.includes('SOCIAL_MEDIA')}
+                      onCheckedChange={(checked) => {
+                        setSelectedAddOns(prev =>
+                          checked
+                            ? [...prev, 'SOCIAL_MEDIA']
+                            : prev.filter(a => a !== 'SOCIAL_MEDIA')
+                        );
+                      }}
+                    />
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm">Get engaging captions and hashtags for major platforms</p>
                 </CardContent>
               </Card>
-              <Card>
+
+              <Card className="relative">
                 <CardHeader>
-                  <CardTitle className="text-lg">Video Scripts</CardTitle>
-                  <CardDescription>$25 per listing</CardDescription>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <CardTitle className="text-lg">Video Scripts</CardTitle>
+                      <CardDescription>${(ADD_ON_PRICES.VIDEO_SCRIPT / 100).toFixed(2)} per listing</CardDescription>
+                    </div>
+                    <Checkbox
+                      checked={selectedAddOns.includes('VIDEO_SCRIPT')}
+                      onCheckedChange={(checked) => {
+                        setSelectedAddOns(prev =>
+                          checked
+                            ? [...prev, 'VIDEO_SCRIPT']
+                            : prev.filter(a => a !== 'VIDEO_SCRIPT')
+                        );
+                      }}
+                    />
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm">Professional scripts for your property videos</p>
@@ -310,7 +386,11 @@ export default function PremiumPage() {
                   },
                 }}
               >
-                <CheckoutForm />
+                <CheckoutForm
+                  selectedTier={selectedTier}
+                  selectedAddOns={selectedAddOns}
+                  total={total}
+                />
               </Elements>
             ) : error ? null : (
               <div className="flex justify-center p-8">
