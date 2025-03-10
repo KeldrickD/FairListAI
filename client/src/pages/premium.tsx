@@ -201,7 +201,7 @@ export default function PremiumPage() {
   const params = new URLSearchParams(location.split('?')[1]);
   const planFromUrl = params.get('plan');
 
-  // Map URL plan parameter to subscription tier
+  // Update the initial tier selection logic
   const getInitialTier = () => {
     switch (planFromUrl) {
       case 'pay_per_use':
@@ -223,7 +223,7 @@ export default function PremiumPage() {
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
-  // Update the total calculation to ensure it's a number
+  // Update the total calculation
   const total = selectedTier === SUBSCRIPTION_TIERS.PAY_PER_USE
     ? 500 // Fixed amount for pay-per-use
     : (SUBSCRIPTION_PRICES[selectedTier.toLowerCase()] || 0) +
