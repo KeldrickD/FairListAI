@@ -227,7 +227,7 @@ export default function PremiumPage() {
   const total = selectedTier === SUBSCRIPTION_TIERS.PAY_PER_USE
     ? 500 // Fixed amount for pay-per-use
     : (SUBSCRIPTION_PRICES[selectedTier.toLowerCase()] || 0) +
-      selectedAddOns.reduce((sum, addon) => 
+      selectedAddOns.reduce((sum, addon) =>
         sum + (ADD_ON_PRICES[addon] || 0), 0);
 
   useEffect(() => {
