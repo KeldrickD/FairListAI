@@ -223,8 +223,12 @@ export default function PremiumPage() {
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
-  const total = SUBSCRIPTION_PRICES[selectedTier] +
-    selectedAddOns.reduce((sum, addon) => sum + (ADD_ON_PRICES[addon] || 0), 0);
+  // Update the total calculation to ensure it's a number
+  const total = selectedTier === SUBSCRIPTION_TIERS.PAY_PER_USE
+    ? 500 // Fixed amount for pay-per-use
+    : (SUBSCRIPTION_PRICES[selectedTier.toLowerCase()] || 0) +
+      selectedAddOns.reduce((sum, addon) => 
+        sum + (ADD_ON_PRICES[addon] || 0), 0);
 
   useEffect(() => {
     const initializePayment = async () => {
@@ -233,20 +237,23 @@ export default function PremiumPage() {
           tier: selectedTier,
           addOns: selectedAddOns
         });
-        const data = await response.json();
-        if (response.ok) {
-          setClientSecret(data.clientSecret);
-          setError(null);
-        } else {
+
+        if (!response.ok) {
+          const data = await response.json();
           setError(data.message || "Failed to initialize payment");
+          return;
         }
+
+        const data = await response.json();
+        setClientSecret(data.clientSecret);
+        setError(null);
       } catch (error) {
         console.error("Failed to initialize payment:", error);
         setError("Failed to initialize payment. Please try again.");
       }
     };
 
-    if (!user?.isPremium) {
+    if (!user?.isPremium && selectedTier) {
       initializePayment();
     }
   }, [user, selectedTier, selectedAddOns]);

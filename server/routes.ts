@@ -128,8 +128,13 @@ export async function registerRoutes(app: Express) {
 
       console.log('Creating payment intent:', { tier, amount, addOns }); // Add logging
 
+      // Ensure amount is a valid number
+      if (typeof amount !== 'number' || isNaN(amount) || amount <= 0) {
+        return res.status(400).json({ message: "Invalid payment amount" });
+      }
+
       const paymentIntent = await stripe.paymentIntents.create({
-        amount,
+        amount: Math.round(amount), // Ensure amount is an integer
         currency: "usd",
         payment_method_types: ['card'],
         metadata: {
