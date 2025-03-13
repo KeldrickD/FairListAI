@@ -1,17 +1,15 @@
 import React, { useState } from 'react';
 
 type SubscriptionTier = "FREE" | "BASIC" | "PAY_PER_USE" | "PRO" | "ENTERPRISE";
-type PricingTier = "BASIC" | "PRO" | "ENTERPRISE" | "PAY_PER_USE";
-type LowercasePricingTier = Lowercase<PricingTier>;
+type PricingTier = "basic" | "pro" | "enterprise" | "pay_per_use";
+type PayPerUseService = keyof typeof PAY_PER_USE_PRICES;
 
-const PRICES: Record<LowercasePricingTier, number> = {
+const PRICES = {
   basic: 2900,
   pro: 9900,
   enterprise: 49900,
   pay_per_use: 0
 } as const;
-
-type PayPerUseService = keyof typeof PAY_PER_USE_PRICES;
 
 const PAY_PER_USE_PRICES = {
   SEO_OPTIMIZATION: 1000,
@@ -21,7 +19,7 @@ const PAY_PER_USE_PRICES = {
   BULK_LISTING_20: 5000
 } as const;
 
-const TIER_LIMITS: Record<LowercasePricingTier | 'free', { listings: number }> = {
+const TIER_LIMITS = {
   free: { listings: 3 },
   basic: { listings: 10 },
   pro: { listings: 50 },
@@ -30,22 +28,31 @@ const TIER_LIMITS: Record<LowercasePricingTier | 'free', { listings: number }> =
 } as const;
 
 export default function Premium() {
-  const [selectedTier, setSelectedTier] = useState<LowercasePricingTier>("basic");
+  const [selectedTier, setSelectedTier] = useState<PricingTier>("basic");
   const [currentTier, setCurrentTier] = useState<SubscriptionTier>("FREE");
   const [selectedService, setSelectedService] = useState<PayPerUseService | null>(null);
 
-  const convertToSubscriptionTier = (tier: LowercasePricingTier): SubscriptionTier => {
-    return tier.toUpperCase() as SubscriptionTier;
+  const convertToSubscriptionTier = (tier: PricingTier): SubscriptionTier => {
+    const tierMap: Record<PricingTier, SubscriptionTier> = {
+      basic: "BASIC",
+      pro: "PRO",
+      enterprise: "ENTERPRISE",
+      pay_per_use: "PAY_PER_USE"
+    };
+    return tierMap[tier];
   };
 
-  const handleTierChange = (newTier: LowercasePricingTier) => {
+  const handleTierChange = (newTier: PricingTier) => {
     setSelectedTier(newTier);
     setCurrentTier(convertToSubscriptionTier(newTier));
   };
 
+  const handleServiceSelect = (service: PayPerUseService) => {
+    setSelectedService(service);
+  };
+
   const price = PRICES[selectedTier];
   const payPerUsePrice = selectedService ? PAY_PER_USE_PRICES[selectedService] : 0;
-
   const tierLimits = TIER_LIMITS[selectedTier];
 
   return (
