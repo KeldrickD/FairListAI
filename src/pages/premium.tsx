@@ -1,116 +1,133 @@
-import React, { useState } from 'react';
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { useToast } from '@/components/ui/use-toast'
+import { apiRequest } from '@/lib/api'
 
-type SubscriptionTier = "FREE" | "BASIC" | "PAY_PER_USE" | "PRO" | "ENTERPRISE";
-type PricingTier = "basic" | "pro" | "enterprise" | "pay_per_use";
-type PayPerUseService = keyof typeof PAY_PER_USE_PRICES;
+interface SubscriptionTier {
+  name: string
+  price: number
+  features: string[]
+  payPerUse?: {
+    price: number
+    unit: string
+  }
+}
 
-const PRICES = {
-  basic: 2900,
-  pro: 9900,
-  enterprise: 49900,
-  pay_per_use: 0
-} as const;
-
-const PAY_PER_USE_PRICES = {
-  SEO_OPTIMIZATION: 1000,
-  SOCIAL_MEDIA: 1500,
-  VIDEO_SCRIPT: 2500,
-  SINGLE_LISTING: 500,
-  BULK_LISTING_20: 5000
-} as const;
-
-const TIER_LIMITS = {
-  free: { listings: 3 },
-  basic: { listings: 10 },
-  pro: { listings: 50 },
-  enterprise: { listings: Number.POSITIVE_INFINITY },
-  pay_per_use: { listings: 0 }
-} as const;
+const subscriptionTiers: SubscriptionTier[] = [
+  {
+    name: 'Basic',
+    price: 9.99,
+    features: [
+      '5 listings per month',
+      'Basic AI optimization',
+      'Email support',
+      'Standard templates'
+    ]
+  },
+  {
+    name: 'Pro',
+    price: 19.99,
+    features: [
+      'Unlimited listings',
+      'Advanced AI optimization',
+      'Priority support',
+      'Premium templates',
+      'Analytics dashboard'
+    ]
+  },
+  {
+    name: 'Enterprise',
+    price: 49.99,
+    features: [
+      'Everything in Pro',
+      'Custom AI training',
+      'Dedicated support',
+      'API access',
+      'Custom integrations'
+    ],
+    payPerUse: {
+      price: 0.05,
+      unit: 'listing'
+    }
+  }
+]
 
 export default function Premium() {
-  const [selectedTier, setSelectedTier] = useState<PricingTier>("basic");
-  const [currentTier, setCurrentTier] = useState<SubscriptionTier>("FREE");
-  const [selectedService, setSelectedService] = useState<PayPerUseService | null>(null);
+  const [selectedTier, setSelectedTier] = useState<SubscriptionTier | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const { toast } = useToast()
 
-  const convertToSubscriptionTier = (tier: PricingTier): SubscriptionTier => {
-    const tierMap: Record<PricingTier, SubscriptionTier> = {
-      basic: "BASIC",
-      pro: "PRO",
-      enterprise: "ENTERPRISE",
-      pay_per_use: "PAY_PER_USE"
-    };
-    return tierMap[tier];
-  };
+  const handleSubscribe = async (tier: SubscriptionTier) => {
+    setIsLoading(true)
+    try {
+      const response = await apiRequest('/api/subscriptions/create', {
+        method: 'POST',
+        body: JSON.stringify({
+          tier: tier.name,
+          price: tier.price,
+          payPerUse: tier.payPerUse
+        })
+      })
 
-  const handleTierChange = (newTier: PricingTier) => {
-    setSelectedTier(newTier);
-    setCurrentTier(convertToSubscriptionTier(newTier));
-  };
-
-  const handleServiceSelect = (service: PayPerUseService) => {
-    setSelectedService(service);
-  };
-
-  const isPayPerUse = currentTier === "PAY_PER_USE";
-  const price = isPayPerUse ? 0 : PRICES[selectedTier];
-  const payPerUsePrice = selectedService ? PAY_PER_USE_PRICES[selectedService] : 0;
-  const tierLimits = TIER_LIMITS[selectedTier];
-
-  const renderPricing = () => {
-    if (isPayPerUse && selectedService) {
-      return (
-        <div>
-          <h2>Pay Per Use Pricing</h2>
-          <p>Price: ${payPerUsePrice / 100}</p>
-        </div>
-      );
+      if (response.success) {
+        toast({
+          title: 'Success!',
+          description: `You have successfully subscribed to the ${tier.name} plan.`
+        })
+      } else {
+        throw new Error(response.message || 'Failed to create subscription')
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to create subscription',
+        variant: 'destructive'
+      })
+    } finally {
+      setIsLoading(false)
     }
-
-    return (
-      <div>
-        <h2>Subscription Pricing</h2>
-        <p>Price: ${price / 100}/month</p>
-        <p>Listings included: {tierLimits.listings}</p>
-      </div>
-    );
-  };
+  }
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Premium Plans</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {Object.entries(PRICES).map(([tier, price]) => (
-          <button
-            key={tier}
-            onClick={() => handleTierChange(tier as PricingTier)}
-            className={`p-4 border rounded ${selectedTier === tier ? 'border-blue-500' : 'border-gray-200'}`}
-          >
-            {tier.charAt(0).toUpperCase() + tier.slice(1)}
-            {tier !== 'pay_per_use' && <span> - ${price / 100}/month</span>}
-          </button>
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-4xl font-bold text-center mb-8">Choose Your Plan</h1>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {subscriptionTiers.map((tier) => (
+          <Card key={tier.name} className="flex flex-col">
+            <CardHeader>
+              <CardTitle>{tier.name}</CardTitle>
+              <CardDescription>
+                ${tier.price.toFixed(2)}/month
+                {tier.payPerUse && (
+                  <span className="block text-sm text-muted-foreground">
+                    +${tier.payPerUse.price.toFixed(2)} per {tier.payPerUse.unit}
+                  </span>
+                )}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex-grow">
+              <ul className="space-y-2">
+                {tier.features.map((feature) => (
+                  <li key={feature} className="flex items-center">
+                    <span className="mr-2">✓</span>
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+            <CardFooter>
+              <Button
+                className="w-full"
+                onClick={() => handleSubscribe(tier)}
+                disabled={isLoading}
+              >
+                {isLoading ? 'Processing...' : 'Subscribe'}
+              </Button>
+            </CardFooter>
+          </Card>
         ))}
       </div>
-
-      {isPayPerUse && (
-        <div className="mt-4">
-          <h2 className="text-xl font-semibold mb-2">Select Service</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {Object.entries(PAY_PER_USE_PRICES).map(([service, price]) => (
-              <button
-                key={service}
-                onClick={() => handleServiceSelect(service as PayPerUseService)}
-                className={`p-4 border rounded ${selectedService === service ? 'border-blue-500' : 'border-gray-200'}`}
-              >
-                {service.replace(/_/g, ' ')} - ${price / 100}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="mt-8">
-        {renderPricing()}
-      </div>
     </div>
-  );
+  )
 } 
