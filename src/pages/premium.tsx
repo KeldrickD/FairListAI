@@ -22,7 +22,8 @@ const subscriptionTiers: SubscriptionTier[] = [
     price: 0,
     features: [
       '3 listings per month',
-      'Basic listing features',
+      'Basic AI listing generation',
+      'Fair Housing compliance check',
       'Email support',
     ],
   },
@@ -31,9 +32,11 @@ const subscriptionTiers: SubscriptionTier[] = [
     price: 29,
     features: [
       '10 listings per month',
-      'Advanced listing features',
+      'Advanced AI listing generation',
+      'Fair Housing compliance filter',
+      'SEO optimization',
       'Priority support',
-      'Analytics dashboard',
+      'Basic analytics',
     ],
   },
   {
@@ -42,8 +45,11 @@ const subscriptionTiers: SubscriptionTier[] = [
     features: [
       '50 listings per month',
       'All basic features',
+      'Social media caption generator',
+      'Hashtag recommendations',
       'API access',
       'Custom branding',
+      'Advanced analytics',
       'Dedicated support',
     ],
   },
@@ -53,9 +59,12 @@ const subscriptionTiers: SubscriptionTier[] = [
     features: [
       'Unlimited listings',
       'All pro features',
+      'Bulk listing generation',
+      'MLS API integration',
       'Custom integrations',
       'SLA guarantee',
       'Dedicated account manager',
+      'White-label options',
     ],
   },
   {
@@ -63,8 +72,9 @@ const subscriptionTiers: SubscriptionTier[] = [
     price: 0,
     features: [
       'Pay only for what you use',
-      'Flexible pricing',
+      'All basic features',
       'No monthly commitment',
+      'Flexible pricing',
     ],
     payPerUse: {
       price: 5,
@@ -74,11 +84,11 @@ const subscriptionTiers: SubscriptionTier[] = [
 ]
 
 const payPerUseServices = {
-  SEO_OPTIMIZATION: 1000,
-  SOCIAL_MEDIA: 1500,
-  VIDEO_SCRIPT: 2500,
-  SINGLE_LISTING: 500,
-  BULK_LISTING_20: 5000,
+  SINGLE_LISTING: 5,
+  BULK_LISTING_20: 90,
+  API_CALL: 0.10,
+  SOCIAL_MEDIA_CAPTION: 2,
+  SEO_OPTIMIZATION: 10,
 } as const
 
 export default function Premium() {
