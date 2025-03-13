@@ -1,8 +1,8 @@
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/components/ui/use-toast'
 import { apiRequest } from '@/lib/api'
-import { useState, ChangeEvent } from 'react'
 
 export default function Login() {
   const [email, setEmail] = useState('')
