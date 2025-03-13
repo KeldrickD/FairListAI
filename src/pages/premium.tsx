@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
 
 type SubscriptionTier = "FREE" | "BASIC" | "PAY_PER_USE" | "PRO" | "ENTERPRISE";
-type PricingTier = "basic" | "pro" | "enterprise" | "pay_per_use";
+type PricingTier = "BASIC" | "PRO" | "ENTERPRISE" | "PAY_PER_USE";
+type LowercasePricingTier = Lowercase<PricingTier>;
 
-const PRICES = {
+const PRICES: Record<LowercasePricingTier, number> = {
   basic: 2900,
   pro: 9900,
   enterprise: 49900,
   pay_per_use: 0
 } as const;
+
+type PayPerUseService = keyof typeof PAY_PER_USE_PRICES;
 
 const PAY_PER_USE_PRICES = {
   SEO_OPTIMIZATION: 1000,
@@ -18,7 +21,7 @@ const PAY_PER_USE_PRICES = {
   BULK_LISTING_20: 5000
 } as const;
 
-const TIER_LIMITS = {
+const TIER_LIMITS: Record<LowercasePricingTier | 'free', { listings: number }> = {
   free: { listings: 3 },
   basic: { listings: 10 },
   pro: { listings: 50 },
@@ -26,27 +29,28 @@ const TIER_LIMITS = {
   pay_per_use: { listings: 0 }
 } as const;
 
-const [selectedTier, setSelectedTier] = useState<PricingTier>("basic");
-const [currentTier, setCurrentTier] = useState<SubscriptionTier>("FREE");
+export default function Premium() {
+  const [selectedTier, setSelectedTier] = useState<LowercasePricingTier>("basic");
+  const [currentTier, setCurrentTier] = useState<SubscriptionTier>("FREE");
+  const [selectedService, setSelectedService] = useState<PayPerUseService | null>(null);
 
-if (currentTier === "PAY_PER_USE") {
-  // ... existing code ...
-}
+  const convertToSubscriptionTier = (tier: LowercasePricingTier): SubscriptionTier => {
+    return tier.toUpperCase() as SubscriptionTier;
+  };
 
-const price = PRICES[selectedTier];
-const payPerUsePrice = selectedService ? PAY_PER_USE_PRICES[selectedService] : 0;
+  const handleTierChange = (newTier: LowercasePricingTier) => {
+    setSelectedTier(newTier);
+    setCurrentTier(convertToSubscriptionTier(newTier));
+  };
 
-const tierLimits = TIER_LIMITS[selectedTier.toLowerCase()];
+  const price = PRICES[selectedTier];
+  const payPerUsePrice = selectedService ? PAY_PER_USE_PRICES[selectedService] : 0;
 
-const convertToSubscriptionTier = (tier: PricingTier): SubscriptionTier => {
-  switch (tier) {
-    case "basic": return "BASIC";
-    case "pro": return "PRO";
-    case "enterprise": return "ENTERPRISE";
-    case "pay_per_use": return "PAY_PER_USE";
-    default: return "FREE";
-  }
-};
+  const tierLimits = TIER_LIMITS[selectedTier];
 
-setCurrentTier(convertToSubscriptionTier(selectedTier));
-// ... existing code ... 
+  return (
+    <div>
+      {/* Your existing JSX */}
+    </div>
+  );
+} 
