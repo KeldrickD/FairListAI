@@ -51,13 +51,66 @@ export default function Premium() {
     setSelectedService(service);
   };
 
-  const price = PRICES[selectedTier];
+  const isPayPerUse = currentTier === "PAY_PER_USE";
+  const price = isPayPerUse ? 0 : PRICES[selectedTier];
   const payPerUsePrice = selectedService ? PAY_PER_USE_PRICES[selectedService] : 0;
   const tierLimits = TIER_LIMITS[selectedTier];
 
+  const renderPricing = () => {
+    if (isPayPerUse && selectedService) {
+      return (
+        <div>
+          <h2>Pay Per Use Pricing</h2>
+          <p>Price: ${payPerUsePrice / 100}</p>
+        </div>
+      );
+    }
+
+    return (
+      <div>
+        <h2>Subscription Pricing</h2>
+        <p>Price: ${price / 100}/month</p>
+        <p>Listings included: {tierLimits.listings}</p>
+      </div>
+    );
+  };
+
   return (
-    <div>
-      {/* Your existing JSX */}
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">Premium Plans</h1>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {Object.entries(PRICES).map(([tier, price]) => (
+          <button
+            key={tier}
+            onClick={() => handleTierChange(tier as PricingTier)}
+            className={`p-4 border rounded ${selectedTier === tier ? 'border-blue-500' : 'border-gray-200'}`}
+          >
+            {tier.charAt(0).toUpperCase() + tier.slice(1)}
+            {tier !== 'pay_per_use' && <span> - ${price / 100}/month</span>}
+          </button>
+        ))}
+      </div>
+
+      {isPayPerUse && (
+        <div className="mt-4">
+          <h2 className="text-xl font-semibold mb-2">Select Service</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {Object.entries(PAY_PER_USE_PRICES).map(([service, price]) => (
+              <button
+                key={service}
+                onClick={() => handleServiceSelect(service as PayPerUseService)}
+                className={`p-4 border rounded ${selectedService === service ? 'border-blue-500' : 'border-gray-200'}`}
+              >
+                {service.replace(/_/g, ' ')} - ${price / 100}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="mt-8">
+        {renderPricing()}
+      </div>
     </div>
   );
 } 
