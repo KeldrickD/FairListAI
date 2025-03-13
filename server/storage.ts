@@ -1,3 +1,9 @@
+import { Pool } from 'pg';
+import { drizzle } from 'drizzle-orm/node-postgres';
+import { migrate } from 'drizzle-orm/node-postgres/migrator';
+import * as schema from '../shared/schema';
+import fs from 'fs';
+import path from 'path';
 import { users, type User, type InsertUser, listings, type Listing, type InsertListing } from "@shared/schema";
 
 enum SUBSCRIPTION_TIERS {
@@ -19,6 +25,7 @@ export interface IStorage {
   updateUserAddOns(userId: number, addOns: string[]): Promise<User>;
 }
 
+class Storage implements IStorage {
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private listings: Map<number, Listing>;

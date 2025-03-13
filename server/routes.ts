@@ -6,6 +6,9 @@ import { insertListingSchema, insertUserSchema, SUBSCRIPTION_TIERS, SUBSCRIPTION
 import { z } from "zod";
 import bcrypt from "bcrypt";
 import Stripe from "stripe";
+import { eq } from 'drizzle-orm';
+import { db } from './index';
+import OpenAI from 'openai';
 
 // Initialize Stripe with development mode handling
 const isDevelopment = process.env.NODE_ENV !== 'production';
@@ -23,6 +26,11 @@ if (!isDevelopment && !process.env.STRIPE_WEBHOOK_SECRET) {
 const stripe = new Stripe(stripeSecretKey, {
   apiVersion: "2025-02-24.acacia" as const,
   typescript: true
+});
+
+// Initialize OpenAI client
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY || 'dummy-key',
 });
 
 // Helper to get raw body for Stripe webhook
@@ -63,6 +71,59 @@ interface PaymentRequestBody {
 const getStorageTier = (tier: ValidSubscriptionTier): string => {
   if (tier === 'pay_per_use') return 'PAY_PER_USE';
   return tier.toUpperCase();
+};
+
+// Type for authenticated request
+interface AuthenticatedRequest extends Request {
+  user?: {
+    id: number;
+    username: string;
+    subscriptionTier: string;
+    isPremium: boolean;
+  };
+}
+
+// Authentication middleware
+const requireAuth = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: Function
+) => {
+  const userId = req.session.userId;
+  
+  if (!userId) {
+    return res.status(401).json({
+      success: false,
+      message: 'Authentication required',
+    });
+  }
+
+  try {
+    const user = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    
+    if (!user.length) {
+      req.session.destroy(() => {});
+      return res.status(401).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+    
+    req.user = {
+      id: user[0].id,
+      username: user[0].username,
+      subscriptionTier: user[0].subscriptionTier,
+      isPremium: user[0].isPremium,
+    };
+    
+    next();
+  } catch (error) {
+    console.error('Auth middleware error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+    });
+  }
 };
 
 export async function registerRoutes(app: Express) {
@@ -358,6 +419,174 @@ export async function registerRoutes(app: Express) {
       console.error("Error fetching listings:", error);
       return res.status(400).json({
         message: error instanceof Error ? error.message : "Failed to fetch listings"
+      });
+    }
+  });
+
+  app.get('/api/auth/user', async (req: AuthenticatedRequest, res) => {
+    const userId = req.session.userId;
+    
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Not authenticated',
+      });
+    }
+    
+    try {
+      const user = await db
+        .select({
+          id: users.id,
+          username: users.username,
+          subscriptionTier: users.subscriptionTier,
+          isPremium: users.isPremium,
+          listingsThisMonth: users.listingsThisMonth,
+          listingCredits: users.listingCredits,
+          seoEnabled: users.seoEnabled,
+          socialMediaEnabled: users.socialMediaEnabled,
+          videoScriptsEnabled: users.videoScriptsEnabled,
+        })
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+      
+      if (!user.length) {
+        req.session.destroy(() => {});
+        return res.status(401).json({
+          success: false,
+          message: 'User not found',
+        });
+      }
+      
+      return res.status(200).json(user[0]);
+    } catch (error) {
+      console.error('Get user error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+      });
+    }
+  });
+
+  app.post('/api/compliance/check', async (req, res) => {
+    try {
+      const { text } = req.body;
+      
+      if (!text) {
+        return res.status(400).json({
+          success: false,
+          message: 'Text is required',
+        });
+      }
+
+      const promptText = `Analyze the following real estate listing for potential Fair Housing compliance issues:
+
+"${text}"
+
+Identify any potential discriminatory language or content that might violate Fair Housing laws. 
+Focus on language related to protected classes: race, color, religion, sex (including gender identity and sexual orientation), disability, familial status, or national origin.
+
+If there are issues, format your response as a JSON array of objects with the following structure:
+[
+  {
+    "type": "warning" or "error",
+    "message": "Explain what the issue is",
+    "suggestion": "Suggest how to fix it"
+  }
+]
+
+If there are no issues, return an empty array: []`;
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4-turbo-preview",
+        messages: [{ role: "user", content: promptText }],
+        temperature: 0.2,
+        max_tokens: 1000,
+        response_format: { type: "json_object" },
+      });
+
+      const content = completion.choices[0].message.content || "{}";
+      const issues = JSON.parse(content).issues || [];
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          issues,
+        },
+      });
+    } catch (error) {
+      console.error('Compliance check error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error checking compliance',
+      });
+    }
+  });
+
+  app.post('/api/seo/analyze', async (req, res) => {
+    try {
+      const { title, description } = req.body;
+      
+      if (!title || !description) {
+        return res.status(400).json({
+          success: false,
+          message: 'Title and description are required',
+        });
+      }
+
+      const promptText = `Analyze the following real estate listing title and description for SEO:
+
+Title: "${title}"
+Description: "${description}"
+
+Provide an SEO analysis with metrics in the following JSON format:
+{
+  "metrics": [
+    {
+      "name": "Title Length",
+      "score": 85,
+      "maxScore": 100,
+      "suggestions": ["Make the title a bit shorter to fit better in search results"]
+    },
+    {
+      "name": "Keyword Density",
+      "score": 70,
+      "maxScore": 100,
+      "suggestions": ["Add more relevant keywords naturally throughout the description"]
+    }
+  ]
+}
+
+Analyze the following aspects:
+1. Title Length (ideal is 50-60 characters)
+2. Keyword Density
+3. Readability
+4. Use of Location
+5. Feature Highlighting
+6. Call to Action
+
+For each metric, provide a score out of 100 and actionable suggestions for improvement.`;
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4-turbo-preview",
+        messages: [{ role: "user", content: promptText }],
+        temperature: 0.2,
+        max_tokens: 1000,
+        response_format: { type: "json_object" },
+      });
+
+      const content = completion.choices[0].message.content || "{}";
+      const data = JSON.parse(content);
+
+      return res.status(200).json({
+        success: true,
+        data,
+      });
+    } catch (error) {
+      console.error('SEO analysis error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error analyzing SEO',
       });
     }
   });

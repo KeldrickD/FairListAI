@@ -1,366 +1,654 @@
 import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { insertListingSchema, type InsertListing } from "@shared/schema";
+import { useAuth } from "@/hooks/use-auth";
+import { DashboardLayout } from "@/components/layouts/dashboard-layout";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CheckCircle, Copy, Download, Loader2, Sparkles, AlertCircle, Lightbulb } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
-import { Loader2, Home as HomeIcon, Bath, Bed, Maximize2, Building2 } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
-import { Link, useLocation } from "wouter";
-import { queryClient } from "@/lib/queryClient";
-import { AlertCircle, CheckCircle } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
+// Property types for dropdown
+const propertyTypes = [
+  "Single Family Home",
+  "Condo",
+  "Townhouse",
+  "Apartment",
+  "Duplex",
+  "Multi-Family",
+  "Land",
+  "Other"
+];
 
-export default function NewListing() {
+// Tone options for dropdown
+const toneOptions = [
+  "Professional",
+  "Conversational",
+  "Luxury",
+  "Modern",
+  "Traditional"
+];
+
+export default function NewListingPage() {
+  const { user } = useAuth();
   const { toast } = useToast();
-  const [, setLocation] = useLocation();
-  const [generatedListing, setGeneratedListing] = useState<string | null>(null);
-  const [compliance, setCompliance] = useState<{
-    isCompliant: boolean;
-    violations: string[];
-    suggestions: string[];
-  } | null>(null);
-
-  const form = useForm<InsertListing>({
-    resolver: zodResolver(insertListingSchema),
-    defaultValues: {
-      title: "",
-      propertyType: "house",
-      bedrooms: 3,
-      bathrooms: 2,
-      squareFeet: 1500,
-      features: "",
-      tone: "professional", // Added tone default value
-    },
+  const [activeTab, setActiveTab] = useState("details");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isCheckingCompliance, setIsCheckingCompliance] = useState(false);
+  const [isCheckingSEO, setIsCheckingSEO] = useState(false);
+  const [generatedListing, setGeneratedListing] = useState("");
+  const [socialMediaContent, setSocialMediaContent] = useState("");
+  const [complianceResult, setComplianceResult] = useState<{ score: number; issues: string[] } | null>(null);
+  const [seoResult, setSeoResult] = useState<{ score: number; suggestions: string[] } | null>(null);
+  
+  // Form state
+  const [formData, setFormData] = useState({
+    title: "",
+    propertyType: "",
+    bedrooms: "",
+    bathrooms: "",
+    squareFeet: "",
+    price: "",
+    location: "",
+    features: "",
+    tone: "Professional",
+    includeSEO: user?.seoEnabled || false,
+    includeSocialMedia: user?.socialMediaEnabled || false,
   });
 
-  const generateMutation = useMutation({
-    mutationFn: async (data: InsertListing) => {
-      const res = await apiRequest("POST", "/api/listings/generate", data);
-      return res.json();
-    },
-    onSuccess: (data) => {
-      setGeneratedListing(data.generated.listing);
-      setCompliance(data.generated.compliance);
-      queryClient.invalidateQueries({ queryKey: ['/api/listings'] });
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
+  };
+
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
+  };
+
+  const handleFeatureToggle = (feature: string, checked: boolean) => {
+    setFormData({
+      ...formData,
+      [feature]: checked,
+    });
+  };
+
+  const isFormValid = () => {
+    return (
+      formData.propertyType &&
+      formData.bedrooms &&
+      formData.bathrooms &&
+      formData.squareFeet &&
+      formData.price &&
+      formData.location &&
+      formData.features
+    );
+  };
+
+  const handleGenerateListing = async () => {
+    if (!isFormValid()) {
       toast({
-        title: "Success!",
-        description: "Your listing has been generated and saved.",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
+        title: "Missing information",
+        description: "Please fill in all required fields.",
         variant: "destructive",
-        title: "Error",
-        description: error.message,
       });
-    },
-  });
+      return;
+    }
+
+    setIsGenerating(true);
+    setActiveTab("generated");
+
+    try {
+      // Simulate API call with setTimeout
+      setTimeout(() => {
+        // Generate mock listing based on form data
+        const listing = `
+# ${formData.bedrooms} Bed, ${formData.bathrooms} Bath ${formData.propertyType} in ${formData.location}
+
+**Price: $${parseInt(formData.price).toLocaleString()}**
+**Size: ${parseInt(formData.squareFeet).toLocaleString()} sq. ft.**
+
+Welcome to this stunning ${formData.bedrooms} bedroom, ${formData.bathrooms} bathroom ${formData.propertyType.toLowerCase()} located in the heart of ${formData.location}. This property offers the perfect blend of comfort, style, and convenience.
+
+## Property Highlights
+
+This well-maintained home features ${formData.squareFeet} square feet of thoughtfully designed living space. The open floor plan creates a seamless flow between the living areas, making it ideal for both everyday living and entertaining.
+
+${formData.features}
+
+## Location Benefits
+
+Situated in a desirable location with convenient access to shopping, dining, and transportation. The property offers a perfect balance of residential tranquility and urban convenience.
+
+## Investment Opportunity
+
+Priced at $${parseInt(formData.price).toLocaleString()}, this property represents an exceptional value in today's market. Whether you're looking for your dream home or a sound investment, this ${formData.propertyType.toLowerCase()} checks all the boxes.
+
+Contact us today to schedule a viewing of this outstanding property!
+`;
+
+        // Generate social media content if selected
+        let socialContent = "";
+        if (formData.includeSocialMedia) {
+          socialContent = `
+## Instagram Caption
+🏠 NEW LISTING ALERT! ${formData.bedrooms}BR/${formData.bathrooms}BA ${formData.propertyType} in ${formData.location} for $${parseInt(formData.price).toLocaleString()}! This stunning property features ${formData.features.split(',')[0].trim().toLowerCase()} and more! DM for details or click the link in bio to schedule a viewing! #realestate #dreamhome #${formData.location.replace(/,.*$/g, '').replace(/\s+/g, '')} #newlisting
+
+## Facebook Post
+JUST LISTED! Beautiful ${formData.bedrooms} bedroom, ${formData.bathrooms} bathroom ${formData.propertyType.toLowerCase()} in ${formData.location}! Offering ${parseInt(formData.squareFeet).toLocaleString()} sq. ft. of modern living space with amazing features including ${formData.features.split(',').slice(0, 3).join(', ').toLowerCase()}. 
+
+Priced at $${parseInt(formData.price).toLocaleString()} - this won't last long! Contact us today for a private showing.
+
+## Twitter/X Post
+NEW LISTING: Stunning ${formData.bedrooms}BR/${formData.bathrooms}BA ${formData.propertyType} in ${formData.location} for $${parseInt(formData.price).toLocaleString()}! Features include ${formData.features.split(',')[0].trim().toLowerCase()}. Contact us to schedule a showing!
+`;
+        }
+
+        setGeneratedListing(listing);
+        setSocialMediaContent(socialContent);
+        setIsGenerating(false);
+        
+        // Auto check for compliance
+        handleCheckCompliance();
+        
+        // Check SEO if enabled
+        if (formData.includeSEO) {
+          handleCheckSEO();
+        }
+      }, 3000);
+    } catch (error) {
+      setIsGenerating(false);
+      toast({
+        title: "Error",
+        description: "Failed to generate listing. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCheckCompliance = async () => {
+    setIsCheckingCompliance(true);
+    
+    try {
+      // Simulate API call
+      setTimeout(() => {
+        // Mock compliance check results
+        const mockScore = Math.floor(Math.random() * 11) + 90; // 90-100
+        const mockIssues = [];
+        
+        // Add some random issues based on the form data
+        if (formData.features.toLowerCase().includes("perfect for families")) {
+          mockIssues.push("Consider avoiding 'perfect for families' as it may suggest familial status preference");
+        }
+        
+        if (formData.features.toLowerCase().includes("exclusive")) {
+          mockIssues.push("Avoid using 'exclusive' as it may imply discrimination");
+        }
+        
+        if (formData.features.toLowerCase().includes("within walking distance")) {
+          mockIssues.push("Consider replacing 'walking distance' with 'close to' to avoid disability discrimination");
+        }
+        
+        setComplianceResult({
+          score: mockScore,
+          issues: mockIssues
+        });
+        
+        setIsCheckingCompliance(false);
+      }, 2000);
+    } catch (error) {
+      setIsCheckingCompliance(false);
+      toast({
+        title: "Error",
+        description: "Failed to check compliance. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCheckSEO = async () => {
+    setIsCheckingSEO(true);
+    
+    try {
+      // Simulate API call
+      setTimeout(() => {
+        // Mock SEO analysis results
+        const mockScore = Math.floor(Math.random() * 31) + 70; // 70-100
+        const mockSuggestions = [
+          "Consider adding more specific location keywords throughout the listing",
+          "Increase keyword density for property features",
+          "Add a neighborhood section to improve local SEO"
+        ];
+        
+        setSeoResult({
+          score: mockScore,
+          suggestions: mockSuggestions
+        });
+        
+        setIsCheckingSEO(false);
+      }, 2000);
+    } catch (error) {
+      setIsCheckingSEO(false);
+      toast({
+        title: "Error",
+        description: "Failed to analyze SEO. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSave = async () => {
+    toast({
+      title: "Listing saved",
+      description: "Your listing has been saved successfully."
+    });
+    
+    // In a real app, this would redirect to the listings page
+  };
+
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Copied",
+      description: "Content copied to clipboard"
+    });
+  };
+
+  const getScoreColor = (score: number) => {
+    if (score >= 90) return "text-green-600";
+    if (score >= 70) return "text-amber-600";
+    return "text-red-600";
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-      {/* Navigation */}
-      <nav className="border-b bg-white/50 backdrop-blur-sm fixed w-full z-50">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center space-x-2">
-            <Building2 className="h-6 w-6 text-primary" />
-            <span className="font-semibold text-xl">Listing Genie</span>
-          </Link>
-          <div className="flex items-center space-x-4">
-            <Button variant="ghost" asChild>
-              <Link href="/dashboard">Dashboard</Link>
-            </Button>
-            <Button variant="ghost">Support</Button>
-          </div>
+    <DashboardLayout>
+      <div className="flex flex-col gap-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Create New Listing</h1>
+          <p className="text-muted-foreground">
+            Generate a Fair Housing compliant property listing
+          </p>
         </div>
-      </nav>
 
-      <main className="container mx-auto px-4 py-8 pt-24">
-        <div className="max-w-2xl mx-auto">
-          <Card className="shadow-lg border-primary/10">
-            <CardHeader>
-              <CardTitle className="text-2xl">Create New Listing</CardTitle>
-              <CardDescription>
-                Enter your property information below to generate a professional listing
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Form {...form}>
-                <form
-                  onSubmit={form.handleSubmit((data) => generateMutation.mutate(data))}
-                  className="space-y-6"
-                >
-                  <FormField
-                    control={form.control}
-                    name="title"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Listing Title</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="e.g., Modern Downtown Condo or Family Home in Suburbia"
-                            className="h-12"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="propertyType"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Property Type</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="h-12">
-                              <HomeIcon className="w-4 h-4 mr-2" />
-                              <SelectValue placeholder="Select property type" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="house">House</SelectItem>
-                            <SelectItem value="condo">Condo</SelectItem>
-                            <SelectItem value="apartment">Apartment</SelectItem>
-                            <SelectItem value="townhouse">Townhouse</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="tone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Listing Tone</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="h-12">
-                              <SelectValue placeholder="Select tone style" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="luxury">Luxury</SelectItem>
-                            <SelectItem value="cozy">Cozy</SelectItem>
-                            <SelectItem value="modern">Modern</SelectItem>
-                            <SelectItem value="professional">Professional</SelectItem>
-                            <SelectItem value="family-friendly">Family-Friendly</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <div className="grid grid-cols-3 gap-4">
-                    <FormField
-                      control={form.control}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full md:w-auto grid-cols-2 md:grid-cols-3">
+            <TabsTrigger value="details">Property Details</TabsTrigger>
+            <TabsTrigger value="generated" disabled={!generatedListing}>Generated Listing</TabsTrigger>
+            <TabsTrigger value="social" disabled={!socialMediaContent}>Social Media</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="details" className="pt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Property Information</CardTitle>
+                <CardDescription>
+                  Enter details about the property to generate a listing
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="propertyType">Property Type</Label>
+                    <Select
+                      value={formData.propertyType}
+                      onValueChange={(value) => handleSelectChange("propertyType", value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select property type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {propertyTypes.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {type}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="location">Location</Label>
+                    <Input
+                      id="location"
+                      name="location"
+                      placeholder="e.g. Portland, OR"
+                      value={formData.location}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="bedrooms">Bedrooms</Label>
+                    <Input
+                      id="bedrooms"
                       name="bedrooms"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>
-                            <div className="flex items-center gap-2">
-                              <Bed className="w-4 h-4" />
-                              Bedrooms
-                            </div>
-                          </FormLabel>
-                          <FormControl>
-                            <Input type="number" className="h-12" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
+                      type="number"
+                      min="0"
+                      placeholder="3"
+                      value={formData.bedrooms}
+                      onChange={handleInputChange}
                     />
-
-                    <FormField
-                      control={form.control}
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="bathrooms">Bathrooms</Label>
+                    <Input
+                      id="bathrooms"
                       name="bathrooms"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>
-                            <div className="flex items-center gap-2">
-                              <Bath className="w-4 h-4" />
-                              Bathrooms
-                            </div>
-                          </FormLabel>
-                          <FormControl>
-                            <Input type="number" className="h-12" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
+                      type="number"
+                      min="0"
+                      step="0.5"
+                      placeholder="2"
+                      value={formData.bathrooms}
+                      onChange={handleInputChange}
                     />
-
-                    <FormField
-                      control={form.control}
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="squareFeet">Square Feet</Label>
+                    <Input
+                      id="squareFeet"
                       name="squareFeet"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>
-                            <div className="flex items-center gap-2">
-                              <Maximize2 className="w-4 h-4" />
-                              Square Feet
-                            </div>
-                          </FormLabel>
-                          <FormControl>
-                            <Input type="number" className="h-12" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
+                      type="number"
+                      min="1"
+                      placeholder="1500"
+                      value={formData.squareFeet}
+                      onChange={handleInputChange}
                     />
                   </div>
-
-                  <FormField
-                    control={form.control}
-                    name="features"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Key Features</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="Describe notable features or paste an existing listing to improve (e.g., modern kitchen, hardwood floors, updated appliances)"
-                            className="h-48 resize-none"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <div className="flex gap-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full h-12"
-                      onClick={() => setLocation("/dashboard")}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      type="submit"
-                      className="w-full h-12"
-                      disabled={generateMutation.isPending}
-                    >
-                      {generateMutation.isPending ? (
-                        <>
-                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                          Generating...
-                        </>
-                      ) : (
-                        "Generate Listing"
-                      )}
-                    </Button>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="price">Price ($)</Label>
+                    <Input
+                      id="price"
+                      name="price"
+                      type="number"
+                      min="1"
+                      placeholder="450000"
+                      value={formData.price}
+                      onChange={handleInputChange}
+                    />
                   </div>
-                </form>
-              </Form>
-
-              {generatedListing && (
-                <div className="mt-8">
-                  <Card className="shadow-lg border-primary/10">
-                    <CardHeader>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="features">Property Features</Label>
+                  <Textarea
+                    id="features"
+                    name="features"
+                    placeholder="List key features, amenities, and selling points (e.g. Hardwood floors, granite countertops, renovated bathroom, etc.)"
+                    rows={4}
+                    value={formData.features}
+                    onChange={handleInputChange}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="tone">Listing Tone</Label>
+                  <Select
+                    value={formData.tone}
+                    onValueChange={(value) => handleSelectChange("tone", value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select tone" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {toneOptions.map((tone) => (
+                        <SelectItem key={tone} value={tone}>
+                          {tone}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-4 pt-4">
+                  <h3 className="font-medium">Additional Options</h3>
+                  
+                  <div className="flex items-center justify-between space-x-2">
+                    <div className="flex flex-col">
+                      <Label htmlFor="includeSEO" className="flex-1">Include SEO Optimization</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Optimize listing for search engines
+                      </p>
+                    </div>
+                    <Switch
+                      id="includeSEO"
+                      checked={formData.includeSEO}
+                      onCheckedChange={(checked) => handleFeatureToggle("includeSEO", checked)}
+                      disabled={!user?.seoEnabled}
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between space-x-2">
+                    <div className="flex flex-col">
+                      <Label htmlFor="includeSocialMedia" className="flex-1">Include Social Media Content</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Generate content for social platforms
+                      </p>
+                    </div>
+                    <Switch
+                      id="includeSocialMedia"
+                      checked={formData.includeSocialMedia}
+                      onCheckedChange={(checked) => handleFeatureToggle("includeSocialMedia", checked)}
+                      disabled={!user?.socialMediaEnabled}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter className="flex justify-between">
+                <Button variant="outline" onClick={() => setFormData({
+                  title: "",
+                  propertyType: "",
+                  bedrooms: "",
+                  bathrooms: "",
+                  squareFeet: "",
+                  price: "",
+                  location: "",
+                  features: "",
+                  tone: "Professional",
+                  includeSEO: user?.seoEnabled || false,
+                  includeSocialMedia: user?.socialMediaEnabled || false,
+                })}>
+                  Clear
+                </Button>
+                <Button onClick={handleGenerateListing} disabled={isGenerating || !isFormValid()}>
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Generate Listing
+                    </>
+                  )}
+                </Button>
+              </CardFooter>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="generated" className="pt-6">
+            {isGenerating ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+                <h3 className="text-lg font-medium">Generating your listing...</h3>
+                <p className="text-muted-foreground">
+                  Creating a compelling and compliant property description
+                </p>
+              </div>
+            ) : generatedListing ? (
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                    <div>
                       <CardTitle>Generated Listing</CardTitle>
-                      <CardDescription>Review your generated listing below</CardDescription>
+                      <CardDescription>
+                        Fair Housing compliant property description
+                      </CardDescription>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={() => handleCopy(generatedListing)}>
+                      <Copy className="mr-2 h-4 w-4" />
+                      Copy
+                    </Button>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="whitespace-pre-line prose max-w-none">
+                      {generatedListing}
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
+                  {/* Compliance score */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Compliance Check</CardTitle>
+                      <CardDescription>
+                        Fair Housing compliance analysis
+                      </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="rounded-lg bg-muted/30 p-6 border">
-                        <p className="whitespace-pre-wrap text-base leading-relaxed">
-                          {generatedListing}
-                        </p>
-                      </div>
-                      <div className="flex justify-end mt-4 space-x-4">
-                        <Button
-                          variant="outline"
-                          onClick={() => {
-                            navigator.clipboard.writeText(generatedListing);
-                            toast({ description: "Listing copied to clipboard!" });
-                          }}
-                        >
-                          Copy Listing
-                        </Button>
-                        <Button onClick={() => setLocation("/dashboard")}>
-                          Go to Dashboard
-                        </Button>
-                      </div>
+                      {isCheckingCompliance ? (
+                        <div className="flex items-center justify-center py-8">
+                          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        </div>
+                      ) : complianceResult ? (
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <h3 className="font-medium">Compliance Score</h3>
+                            <span className={`text-2xl font-bold ${getScoreColor(complianceResult.score)}`}>
+                              {complianceResult.score}%
+                            </span>
+                          </div>
+                          
+                          {complianceResult.issues.length > 0 ? (
+                            <div className="space-y-2">
+                              <h4 className="font-medium">Issues to Address</h4>
+                              <ul className="space-y-2">
+                                {complianceResult.issues.map((issue, index) => (
+                                  <li key={index} className="flex items-start gap-2 text-sm">
+                                    <AlertCircle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                                    <span>{issue}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2 bg-green-50 text-green-700 p-3 rounded-md">
+                              <CheckCircle className="h-5 w-5" />
+                              <p className="text-sm">No compliance issues detected</p>
+                            </div>
+                          )}
+                        </div>
+                      ) : null}
                     </CardContent>
                   </Card>
-                  {/* Add after the generated listing card */}
-                  {compliance && (
-                    <Card className="shadow-lg border-primary/10">
+                  
+                  {/* SEO score if enabled */}
+                  {formData.includeSEO && (
+                    <Card>
                       <CardHeader>
-                        <div className="flex items-center gap-4">
-                          <CardTitle className="text-2xl">Fair Housing Compliance</CardTitle>
-                          <Badge
-                            variant={compliance.isCompliant ? "default" : "destructive"}
-                            className={cn(
-                              "text-sm py-1",
-                              compliance.isCompliant ? "bg-green-500/10 text-green-600" : ""
-                            )}
-                          >
-                            {compliance.isCompliant ? "Compliant" : "Needs Review"}
-                          </Badge>
-                        </div>
+                        <CardTitle>SEO Analysis</CardTitle>
+                        <CardDescription>
+                          Search engine optimization score
+                        </CardDescription>
                       </CardHeader>
-                      <CardContent className="space-y-4">
-                        {!compliance.isCompliant && compliance.violations.length > 0 && (
-                          <Alert variant="destructive" className="border-destructive/30">
-                            <AlertCircle className="h-5 w-5" />
-                            <AlertTitle className="text-lg font-semibold">Compliance Issues Found</AlertTitle>
-                            <AlertDescription>
-                              <ul className="list-disc pl-4 mt-2 space-y-2">
-                                {compliance.violations.map((violation, i) => (
-                                  <li key={i} className="text-sm">{violation}</li>
-                                ))}
-                              </ul>
-                            </AlertDescription>
-                          </Alert>
-                        )}
-
-                        {compliance.suggestions.length > 0 && (
-                          <Alert className="border-primary/30 bg-primary/5">
-                            <CheckCircle className="h-5 w-5 text-primary" />
-                            <AlertTitle className="text-lg font-semibold">Suggestions for Improvement</AlertTitle>
-                            <AlertDescription>
-                              <ul className="list-disc pl-4 mt-2 space-y-2">
-                                {compliance.suggestions.map((suggestion, i) => (
-                                  <li key={i} className="text-sm">{suggestion}</li>
-                                ))}
-                              </ul>
-                            </AlertDescription>
-                          </Alert>
-                        )}
+                      <CardContent>
+                        {isCheckingSEO ? (
+                          <div className="flex items-center justify-center py-8">
+                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                          </div>
+                        ) : seoResult ? (
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                              <h3 className="font-medium">SEO Score</h3>
+                              <span className={`text-2xl font-bold ${getScoreColor(seoResult.score)}`}>
+                                {seoResult.score}%
+                              </span>
+                            </div>
+                            
+                            {seoResult.suggestions.length > 0 && (
+                              <div className="space-y-2">
+                                <h4 className="font-medium">Optimization Suggestions</h4>
+                                <ul className="space-y-2">
+                                  {seoResult.suggestions.map((suggestion, index) => (
+                                    <li key={index} className="flex items-start gap-2 text-sm">
+                                      <Lightbulb className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                                      <span>{suggestion}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        ) : null}
                       </CardContent>
                     </Card>
                   )}
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </main>
-    </div>
+                
+                <Card>
+                  <CardFooter className="flex justify-between py-6">
+                    <Button variant="outline" onClick={() => setActiveTab("details")}>
+                      Edit Details
+                    </Button>
+                    <div className="flex gap-3">
+                      <Button variant="outline">
+                        <Download className="mr-2 h-4 w-4" />
+                        Export PDF
+                      </Button>
+                      <Button onClick={handleSave}>
+                        <CheckCircle className="mr-2 h-4 w-4" />
+                        Save Listing
+                      </Button>
+                    </div>
+                  </CardFooter>
+                </Card>
+              </div>
+            ) : null}
+          </TabsContent>
+          
+          <TabsContent value="social" className="pt-6">
+            {socialMediaContent ? (
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                  <div>
+                    <CardTitle>Social Media Content</CardTitle>
+                    <CardDescription>
+                      Platform-specific captions for your listing
+                    </CardDescription>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => handleCopy(socialMediaContent)}>
+                    <Copy className="mr-2 h-4 w-4" />
+                    Copy All
+                  </Button>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="whitespace-pre-line prose max-w-none">
+                    {socialMediaContent}
+                  </div>
+                </CardContent>
+                <CardFooter className="flex justify-end">
+                  <Button variant="outline" onClick={() => setActiveTab("generated")}>
+                    Back to Listing
+                  </Button>
+                </CardFooter>
+              </Card>
+            ) : null}
+          </TabsContent>
+        </Tabs>
+      </div>
+    </DashboardLayout>
   );
 }

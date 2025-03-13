@@ -1,142 +1,91 @@
 import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
-import { Link, useLocation } from "wouter";
-import { Building2, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Loader2 } from "lucide-react";
+import { Link, useLocation } from "wouter";
 
-const loginSchema = z.object({
-  username: z.string().min(3).max(50),
-  password: z.string().min(6).max(100),
-});
-
-type LoginForm = z.infer<typeof loginSchema>;
-
-export default function Login() {
-  const { toast } = useToast();
-  const [, setLocation] = useLocation();
+export default function LoginPage() {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const { loginMutation } = useAuth();
+  const [_, setLocation] = useLocation();
 
-  const form = useForm<LoginForm>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      username: "",
-      password: "",
-    },
-  });
-
-  const onSubmit = async (data: LoginForm) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     try {
-      await loginMutation.mutateAsync(data);
-      // Only redirect if the mutation was successful
+      await loginMutation.mutateAsync({ username, password });
       setLocation("/dashboard");
     } catch (error) {
-      // Error is already handled by the mutation's onError callback
-      console.error("Login error:", error);
+      // Error is handled by the mutation
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-      <nav className="border-b bg-white/50 backdrop-blur-sm fixed w-full z-50">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center space-x-2">
-            <Building2 className="h-6 w-6 text-primary" />
-            <span className="font-semibold text-xl">ListingAI</span>
-          </Link>
-          <div className="flex items-center space-x-4">
-            <Button variant="ghost" asChild>
-              <Link href="/register">Register</Link>
+    <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-bold text-center">Login</CardTitle>
+          <CardDescription className="text-center">
+            Enter your credentials to access your account
+          </CardDescription>
+        </CardHeader>
+        <form onSubmit={handleSubmit}>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="username">Email or Username</Label>
+              <Input
+                id="username"
+                type="text"
+                placeholder="Enter your email or username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password</Label>
+                <Link href="/forgot-password" className="text-sm text-primary hover:underline">
+                  Forgot password?
+                </Link>
+              </div>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+          </CardContent>
+          <CardFooter className="flex flex-col space-y-4">
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={loginMutation.isPending}
+            >
+              {loginMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Logging in...
+                </>
+              ) : (
+                "Login"
+              )}
             </Button>
-          </div>
-        </div>
-      </nav>
-
-      <main className="container mx-auto px-4 py-8 pt-24">
-        <div className="max-w-md mx-auto">
-          <Card className="shadow-lg border-primary/10">
-            <CardHeader>
-              <CardTitle className="text-2xl">Login</CardTitle>
-              <CardDescription>
-                Welcome back! Please login to your account.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Form {...form}>
-                <form
-                  onSubmit={form.handleSubmit(onSubmit)}
-                  className="space-y-6"
-                >
-                  <FormField
-                    control={form.control}
-                    name="username"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Username</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="Enter your username"
-                            className="h-12"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Password</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="password"
-                            placeholder="Enter your password"
-                            className="h-12"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <Button
-                    type="submit"
-                    className="w-full h-12"
-                    disabled={loginMutation.isPending}
-                  >
-                    {loginMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                        Logging in...
-                      </>
-                    ) : (
-                      "Login"
-                    )}
-                  </Button>
-
-                  <p className="text-center text-sm text-muted-foreground">
-                    Don't have an account?{" "}
-                    <Link href="/register" className="text-primary hover:underline">
-                      Register here
-                    </Link>
-                  </p>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
-        </div>
-      </main>
+            <div className="text-center text-sm">
+              Don't have an account?{" "}
+              <Link href="/register" className="text-primary hover:underline">
+                Register
+              </Link>
+            </div>
+          </CardFooter>
+        </form>
+      </Card>
     </div>
   );
 }

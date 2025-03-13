@@ -1,166 +1,151 @@
-import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { useToast } from '@/components/ui/use-toast'
-import { apiRequest } from '@/lib/api'
+import React from 'react';
+import Link from 'next/link';
+import { Check } from 'lucide-react';
 
-type SubscriptionTierName = 'FREE' | 'BASIC' | 'PRO' | 'ENTERPRISE' | 'PAY_PER_USE'
-
-interface SubscriptionTier {
-  name: SubscriptionTierName
-  price: number
-  features: string[]
-  payPerUse?: {
-    price: number
-    unit: string
-  }
+interface PricingTier {
+  name: string;
+  price: string;
+  description: string;
+  features: string[];
+  buttonText: string;
+  buttonLink: string;
+  highlighted?: boolean;
 }
 
-const subscriptionTiers: SubscriptionTier[] = [
-  {
-    name: 'FREE',
-    price: 0,
-    features: [
-      '3 listings per month',
-      'Basic AI listing generation',
-      'Fair Housing compliance check',
-      'Email support',
-    ],
-  },
-  {
-    name: 'BASIC',
-    price: 29,
-    features: [
-      '10 listings per month',
-      'Advanced AI listing generation',
-      'Fair Housing compliance filter',
-      'SEO optimization',
-      'Priority support',
-      'Basic analytics',
-    ],
-  },
-  {
-    name: 'PRO',
-    price: 99,
-    features: [
-      '50 listings per month',
-      'All basic features',
-      'Social media caption generator',
-      'Hashtag recommendations',
-      'API access',
-      'Custom branding',
-      'Advanced analytics',
-      'Dedicated support',
-    ],
-  },
-  {
-    name: 'ENTERPRISE',
-    price: 499,
-    features: [
-      'Unlimited listings',
-      'All pro features',
-      'Bulk listing generation',
-      'MLS API integration',
-      'Custom integrations',
-      'SLA guarantee',
-      'Dedicated account manager',
-      'White-label options',
-    ],
-  },
-  {
-    name: 'PAY_PER_USE',
-    price: 0,
-    features: [
-      'Pay only for what you use',
-      'All basic features',
-      'No monthly commitment',
-      'Flexible pricing',
-    ],
-    payPerUse: {
-      price: 5,
-      unit: 'listing',
-    },
-  },
-]
-
-const payPerUseServices = {
-  SINGLE_LISTING: 5,
-  BULK_LISTING_20: 90,
-  API_CALL: 0.10,
-  SOCIAL_MEDIA_CAPTION: 2,
-  SEO_OPTIMIZATION: 10,
-} as const
-
 export default function Premium() {
-  const [selectedTier, setSelectedTier] = useState<SubscriptionTierName>('FREE')
-  const [isLoading, setIsLoading] = useState(false)
-  const { toast } = useToast()
-
-  const handleSubscribe = async (tier: SubscriptionTierName) => {
-    setIsLoading(true)
-    try {
-      const response = await apiRequest('/api/subscriptions/create', {
-        method: 'POST',
-        body: JSON.stringify({ tier }),
-      })
-
-      if (response.success) {
-        toast({
-          title: 'Success!',
-          description: `You have successfully subscribed to the ${tier} tier.`,
-        })
-      } else {
-        throw new Error(response.message || 'Failed to subscribe')
-      }
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to subscribe',
-        variant: 'destructive',
-      })
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const getTierPrice = (tier: SubscriptionTierName): number => {
-    const subscription = subscriptionTiers.find((t) => t.name === tier)
-    return subscription?.price || 0
-  }
-
-  const getPayPerUsePrice = (service: keyof typeof payPerUseServices): number => {
-    return payPerUseServices[service]
-  }
+  const pricingTiers: PricingTier[] = [
+    {
+      name: 'Free',
+      price: '$0',
+      description: 'Basic features for individual agents',
+      features: [
+        '5 listings per month',
+        'Basic compliance checking',
+        'Standard SEO optimization',
+        'Social media captions',
+        'PDF downloads',
+      ],
+      buttonText: 'Get Started',
+      buttonLink: '/register',
+    },
+    {
+      name: 'Pro',
+      price: '$29',
+      description: 'Advanced features for serious agents',
+      features: [
+        'Unlimited listings',
+        'Advanced compliance checking',
+        'Enhanced SEO optimization',
+        'Social media captions with analytics',
+        'PDF and Word downloads',
+        'Email marketing templates',
+        'Priority support',
+      ],
+      buttonText: 'Upgrade to Pro',
+      buttonLink: '/checkout?plan=pro',
+      highlighted: true,
+    },
+    {
+      name: 'Team',
+      price: '$99',
+      description: 'For real estate teams and brokerages',
+      features: [
+        'Everything in Pro',
+        'Up to 10 team members',
+        'Team dashboard',
+        'Listing approval workflow',
+        'Brand voice customization',
+        'White-label PDFs',
+        'API access',
+        'Dedicated account manager',
+      ],
+      buttonText: 'Contact Sales',
+      buttonLink: '/contact',
+    },
+  ];
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-4xl font-bold text-center mb-8">Choose Your Plan</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {subscriptionTiers.map((tier) => (
-          <Card key={tier.name} className="p-6">
-            <h2 className="text-2xl font-bold mb-4">{tier.name}</h2>
-            <div className="text-3xl font-bold mb-4">
-              ${tier.price}
-              {tier.payPerUse && <span className="text-sm">/{tier.payPerUse.unit}</span>}
+    <div className="container mx-auto px-4 py-16">
+      <div className="text-center mb-16">
+        <h1 className="text-4xl font-bold mb-4">Premium Features</h1>
+        <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+          Upgrade your account to access advanced features and create even better property listings.
+        </p>
+      </div>
+
+      <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+        {pricingTiers.map((tier) => (
+          <div 
+            key={tier.name}
+            className={`rounded-lg overflow-hidden ${
+              tier.highlighted 
+                ? 'ring-2 ring-indigo-600 shadow-lg' 
+                : 'border border-gray-200 shadow-sm'
+            }`}
+          >
+            <div className={`p-6 ${tier.highlighted ? 'bg-indigo-50' : 'bg-white'}`}>
+              <h3 className="text-2xl font-bold">{tier.name}</h3>
+              <p className="mt-4 flex items-baseline">
+                <span className="text-4xl font-extrabold">{tier.price}</span>
+                {tier.name !== 'Free' && <span className="ml-1 text-gray-500">/month</span>}
+              </p>
+              <p className="mt-2 text-gray-600">{tier.description}</p>
             </div>
-            <ul className="space-y-2 mb-6">
-              {tier.features.map((feature, index) => (
-                <li key={index} className="flex items-center">
-                  <span className="mr-2">✓</span>
-                  {feature}
-                </li>
-              ))}
-            </ul>
-            <Button
-              onClick={() => handleSubscribe(tier.name)}
-              disabled={isLoading}
-              className="w-full"
-            >
-              {isLoading ? 'Processing...' : 'Subscribe'}
-            </Button>
-          </Card>
+            <div className="px-6 pt-6 pb-8 bg-white">
+              <ul className="space-y-4">
+                {tier.features.map((feature) => (
+                  <li key={feature} className="flex items-start">
+                    <Check className="h-5 w-5 text-green-500 shrink-0 mr-2" />
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-8">
+                <Link
+                  href={tier.buttonLink}
+                  className={`block w-full text-center py-3 px-4 rounded-md font-medium ${
+                    tier.highlighted
+                      ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                      : 'bg-white text-indigo-600 border border-indigo-600 hover:bg-indigo-50'
+                  }`}
+                >
+                  {tier.buttonText}
+                </Link>
+              </div>
+            </div>
+          </div>
         ))}
       </div>
+
+      <div className="mt-20 bg-gray-50 rounded-lg p-8 max-w-4xl mx-auto">
+        <h2 className="text-2xl font-bold mb-6">Frequently Asked Questions</h2>
+        <div className="space-y-6">
+          <div>
+            <h3 className="text-lg font-medium mb-2">Can I upgrade or downgrade at any time?</h3>
+            <p className="text-gray-600">
+              Yes, you can upgrade, downgrade, or cancel your subscription at any time. Changes to your subscription will take effect at the start of your next billing cycle.
+            </p>
+          </div>
+          <div>
+            <h3 className="text-lg font-medium mb-2">How does the team plan work?</h3>
+            <p className="text-gray-600">
+              The team plan allows up to 10 team members to access the platform under a single account. The team admin can manage permissions, view all listings, and track team performance.
+            </p>
+          </div>
+          <div>
+            <h3 className="text-lg font-medium mb-2">Do you offer a free trial of premium features?</h3>
+            <p className="text-gray-600">
+              Yes, we offer a 14-day free trial of our Pro plan. No credit card required. You can try all the premium features and decide if it's right for you.
+            </p>
+          </div>
+          <div>
+            <h3 className="text-lg font-medium mb-2">What payment methods do you accept?</h3>
+            <p className="text-gray-600">
+              We accept all major credit cards, PayPal, and bank transfers for annual plans. All payments are processed securely through Stripe.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
-  )
+  );
 } 

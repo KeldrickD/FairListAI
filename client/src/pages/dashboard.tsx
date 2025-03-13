@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Crown, AlertCircle, CheckCircle, Plus, Pencil, Download, Search, SortAsc, Filter, Building2, Sparkles, Video, Share2 } from "lucide-react";
+import { Loader2, Crown, AlertCircle, CheckCircle, Plus, Pencil, Download, Search, SortAsc, Filter, Building2, Sparkles, Video, Share2, CircleCheck, PieChart, List, ChevronRight, FileText } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -22,6 +22,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { BarChart, Home, Settings, Users } from "lucide-react";
+import { DashboardLayout } from "@/components/layouts/dashboard-layout";
 
 interface ListingsResponse {
   listings: Listing[];
@@ -138,7 +140,29 @@ function AddOnsStatus() {
   );
 }
 
-export default function Dashboard() {
+// Mock data for dashboard
+const mockRecentListings = [
+  {
+    id: 101,
+    title: "Modern 3 Bedroom House in Portland",
+    date: "2 days ago",
+    complianceScore: 95,
+  },
+  {
+    id: 102,
+    title: "Downtown Luxury Condo with City Views",
+    date: "1 week ago",
+    complianceScore: 88,
+  },
+  {
+    id: 103,
+    title: "Charming Cottage with Garden",
+    date: "2 weeks ago",
+    complianceScore: 100,
+  },
+];
+
+export default function DashboardPage() {
   const { toast } = useToast();
   const [editingTitleId, setEditingTitleId] = useState<number | null>(null);
   const [editTitle, setEditTitle] = useState("");
@@ -146,7 +170,7 @@ export default function Dashboard() {
   const [sortBy, setSortBy] = useState<"date" | "title" | "type">("date");
   const [filterType, setFilterType] = useState<string>("all");
   const queryClient = useQueryClient();
-  const { user } = useAuth(); // Added useAuth hook
+  const { user } = useAuth();
 
   const listingsQuery = useQuery<ListingsResponse>({
     queryKey: ['/api/listings'],
@@ -232,244 +256,200 @@ export default function Dashboard() {
   const isFreeTier = true;
   const remainingListings = isFreeTier ? `${5 - listingsThisMonth} remaining` : "Unlimited";
 
+  // Mock stats for dashboard
+  const stats = {
+    totalListings: 14,
+    compliantListings: 12,
+    listingCreditsRemaining: user?.isPremium ? "Unlimited" : 5,
+    avgComplianceScore: 92,
+    seoScore: 86,
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-      <nav className="border-b bg-white/50 backdrop-blur-sm fixed w-full z-50">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center space-x-2">
-            <Building2 className="h-6 w-6 text-primary" />
-            <span className="font-semibold text-xl">Listing Genie</span>
-          </Link>
-          <div className="flex items-center space-x-4">
-            <Button variant="ghost">Features</Button>
-            <Button variant="ghost">Pricing</Button>
-            <Button variant="ghost">Support</Button>
+    <DashboardLayout>
+      <div className="flex flex-col gap-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+            <p className="text-muted-foreground">
+              Welcome back, {user?.username || "User"}! Here's what's happening with your listings.
+            </p>
           </div>
+          <Button asChild>
+            <Link href="/new-listing">
+              <Plus className="mr-2 h-4 w-4" />
+              New Listing
+            </Link>
+          </Button>
         </div>
-      </nav>
 
-      <main className="container mx-auto px-4 py-8 pt-24">
-        <div className="max-w-6xl mx-auto space-y-8">
-          <div className="flex justify-between items-start">
-            <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                Dashboard
-              </h1>
-              <p className="text-muted-foreground mt-2">
-                Manage your listings and subscription
-              </p>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <Button asChild className="bg-primary/10 text-primary hover:bg-primary/20">
-                <Link href="/new">
-                  <Plus className="mr-2 h-4 w-4" />
-                  New Listing
-                </Link>
-              </Button>
-
-              {isFreeTier && (
-                <Button className="bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700" asChild>
-                  <Link href="/premium">
-                    <Crown className="mr-2 h-4 w-4" />
-                    Upgrade to Premium
-                  </Link>
-                </Button>
-              )}
-            </div>
-          </div>
-
-          <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search listings..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 h-12"
-              />
-            </div>
-            <div className="flex gap-2">
-              <Select value={sortBy} onValueChange={(value) => setSortBy(value as any)}>
-                <SelectTrigger className="w-[160px] h-12">
-                  <SortAsc className="mr-2 h-4 w-4" />
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="date">Date Created</SelectItem>
-                  <SelectItem value="title">Title</SelectItem>
-                  <SelectItem value="type">Property Type</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={filterType} onValueChange={setFilterType}>
-                <SelectTrigger className="w-[160px] h-12">
-                  <Filter className="mr-2 h-4 w-4" />
-                  <SelectValue placeholder="Filter type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="house">Houses</SelectItem>
-                  <SelectItem value="condo">Condos</SelectItem>
-                  <SelectItem value="apartment">Apartments</SelectItem>
-                  <SelectItem value="townhouse">Townhouses</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Subscription Status</CardTitle>
-                <CardDescription>
-                  {isFreeTier ? "Free Plan" : "Premium Plan"}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {isFreeTier && (
-                  <>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span>Monthly Listings</span>
-                        <span className="font-medium">{listingsThisMonth}/5</span>
-                      </div>
-                      <Progress value={listingsThisMonth * 20} />
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-4">
-                      {remainingListings} this month
-                    </p>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-
-            <AddOnsStatus />
-          </div>
-
+        {/* Stats cards */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
-            <CardHeader>
-              <CardTitle>Quick Stats</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Total Listings
+              </CardTitle>
+              <FileText className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <dl className="grid grid-cols-2 gap-4">
-                <div>
-                  <dt className="text-sm font-medium text-muted-foreground">
-                    Total Listings
-                  </dt>
-                  <dd className="text-2xl font-bold">
-                    {listings.length}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-sm font-medium text-muted-foreground">
-                    AI Generated
-                  </dt>
-                  <dd className="text-2xl font-bold">
-                    {listings.filter((l: Listing) => l.generatedListing).length}
-                  </dd>
-                </div>
-              </dl>
+              <div className="text-2xl font-bold">{stats.totalListings}</div>
+              <p className="text-xs text-muted-foreground">
+                {stats.compliantListings} compliant with Fair Housing
+              </p>
             </CardContent>
           </Card>
           <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Avg. Compliance Score
+              </CardTitle>
+              <CircleCheck className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.avgComplianceScore}%</div>
+              <div className="mt-2">
+                <Progress value={stats.avgComplianceScore} className="h-2" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Avg. SEO Score
+              </CardTitle>
+              <Search className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.seoScore}%</div>
+              <div className="mt-2">
+                <Progress value={stats.seoScore} className="h-2" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Listing Credits
+              </CardTitle>
+              <PieChart className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.listingCreditsRemaining}</div>
+              <p className="text-xs text-muted-foreground">
+                {user?.isPremium 
+                  ? "Premium subscription" 
+                  : "Free tier limit"}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Main dashboard content */}
+        <div className="grid gap-6 md:grid-cols-2">
+          <Card className="col-span-2 md:col-span-1">
             <CardHeader>
               <CardTitle>Recent Listings</CardTitle>
               <CardDescription>
-                {listings.length} listing{listings.length !== 1 ? 's' : ''} found
+                Your recently created property listings
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <ScrollArea className="h-[400px] pr-4">
-                <div className="space-y-4">
-                  {listings.map((listing: Listing) => (
-                    <div key={listing.id}>
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          {editingTitleId === listing.id ? (
-                            <div className="flex gap-2 items-center">
-                              <Input
-                                value={editTitle}
-                                onChange={(e) => setEditTitle(e.target.value)}
-                                className="max-w-sm"
-                              />
-                              <Button
-                                size="sm"
-                                onClick={() => {
-                                  updateTitleMutation.mutate({
-                                    id: listing.id,
-                                    title: editTitle,
-                                  });
-                                }}
-                              >
-                                Save
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => setEditingTitleId(null)}
-                              >
-                                Cancel
-                              </Button>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-medium">
-                                {listing.title || (listing.propertyType.charAt(0).toUpperCase() + listing.propertyType.slice(1))}
-                              </h3>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-6 w-6 p-0"
-                                onClick={() => {
-                                  setEditingTitleId(listing.id);
-                                  setEditTitle(listing.title || "");
-                                }}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          )}
-                          <p className="text-sm text-muted-foreground">
-                            {listing.bedrooms} bed • {listing.bathrooms} bath • {listing.squareFeet} sq ft
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => exportListing(listing, 'text')}
-                            title="Export as Text"
-                          >
-                            <Download className="h-4 w-4 mr-1" />
-                            Text
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => exportListing(listing, 'csv')}
-                            title="Export as CSV"
-                          >
-                            <Download className="h-4 w-4 mr-1" />
-                            CSV
-                          </Button>
-                          <CheckCircle className="h-5 w-5 text-green-500" />
-                        </div>
+              <div className="space-y-3">
+                {mockRecentListings.map((listing) => (
+                  <div key={listing.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="flex flex-col">
+                      <div className="font-medium truncate max-w-[200px] md:max-w-[240px] lg:max-w-xs">
+                        {listing.title}
                       </div>
-                      {listing.generatedListing && (
-                        <p className="mt-2 text-sm">
-                          {listing.generatedListing}
-                        </p>
-                      )}
-                      <Separator className="mt-4" />
+                      <div className="text-xs text-muted-foreground">{listing.date}</div>
                     </div>
-                  ))}
-                </div>
-              </ScrollArea>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                        {listing.complianceScore}%
+                      </Badge>
+                      <Button variant="ghost" size="icon">
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button variant="outline" asChild className="w-full">
+                <Link href="/listings">
+                  <List className="mr-2 h-4 w-4" />
+                  View All Listings
+                </Link>
+              </Button>
+            </CardFooter>
+          </Card>
+
+          <Card className="col-span-2 md:col-span-1">
+            <CardHeader>
+              <CardTitle>Quick Actions</CardTitle>
+              <CardDescription>
+                Access key features of FairListAI
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-3">
+                <Link href="/new-listing" className="block">
+                  <div className="flex items-center gap-4 p-3 border rounded-lg hover:bg-accent transition-colors">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-md bg-primary/10">
+                      <Plus className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium">Create New Listing</h3>
+                      <p className="text-sm text-muted-foreground">Generate a new property listing</p>
+                    </div>
+                  </div>
+                </Link>
+
+                <Link href="/compliance-checker" className="block">
+                  <div className="flex items-center gap-4 p-3 border rounded-lg hover:bg-accent transition-colors">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-md bg-primary/10">
+                      <CircleCheck className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium">Check Compliance</h3>
+                      <p className="text-sm text-muted-foreground">Verify Fair Housing compliance</p>
+                    </div>
+                  </div>
+                </Link>
+
+                <Link href="/seo-analyzer" className="block">
+                  <div className="flex items-center gap-4 p-3 border rounded-lg hover:bg-accent transition-colors">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-md bg-primary/10">
+                      <Search className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium">SEO Analyzer</h3>
+                      <p className="text-sm text-muted-foreground">Optimize your listings for search</p>
+                    </div>
+                  </div>
+                </Link>
+              </div>
             </CardContent>
           </Card>
         </div>
-      </main>
-    </div>
+
+        {/* Upgrade banner for free users */}
+        {!user?.isPremium && (
+          <Card className="bg-primary/5 border-primary/20">
+            <CardContent className="flex flex-col md:flex-row items-center justify-between gap-4 py-6">
+              <div>
+                <h3 className="text-lg font-semibold">Upgrade to Premium</h3>
+                <p className="text-sm text-muted-foreground">
+                  Get unlimited listings, advanced SEO tools, and priority support
+                </p>
+              </div>
+              <Button>Upgrade Now</Button>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </DashboardLayout>
   );
 }

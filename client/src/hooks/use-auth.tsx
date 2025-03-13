@@ -1,54 +1,102 @@
-import { createContext, ReactNode, useContext } from "react";
+import { createContext, ReactNode, useContext, useState, useEffect } from "react";
 import {
   useQuery,
   useMutation,
   UseMutationResult,
 } from "@tanstack/react-query";
-import { type User, type InsertUser } from "@shared/schema";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "./use-toast";
+
+// Define user types
+export type User = {
+  id: number;
+  username: string;
+  subscriptionTier: string;
+  isPremium: boolean;
+};
+
+export type LoginCredentials = {
+  username: string;
+  password: string;
+};
+
+export type RegisterCredentials = {
+  username: string;
+  password: string;
+  name?: string;
+};
 
 type AuthContextType = {
   user: User | null;
   isLoading: boolean;
   error: Error | null;
-  loginMutation: UseMutationResult<User, Error, InsertUser>;
+  loginMutation: UseMutationResult<User, Error, LoginCredentials>;
   logoutMutation: UseMutationResult<void, Error, void>;
-  registerMutation: UseMutationResult<User, Error, InsertUser>;
+  registerMutation: UseMutationResult<User, Error, RegisterCredentials>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+// Mock user for development
+const MOCK_USER: User = {
+  id: 1,
+  username: "demo@example.com",
+  subscriptionTier: "free",
+  isPremium: false,
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
+  const [mockUser, setMockUser] = useState<User | null>(null);
+  
+  // Load user from localStorage on initial mount
+  useEffect(() => {
+    const storedUser = localStorage.getItem('mockUser');
+    if (storedUser) {
+      try {
+        setMockUser(JSON.parse(storedUser));
+      } catch (e) {
+        localStorage.removeItem('mockUser');
+      }
+    }
+  }, []);
 
+  // Mock API call to fetch user
   const {
     data: user,
     error,
     isLoading,
+    refetch,
   } = useQuery<User>({
     queryKey: ["/api/auth/user"],
     queryFn: async () => {
-      const res = await fetch("/api/auth/user");
-      if (!res.ok) {
-        if (res.status === 401) return null;
-        throw new Error("Failed to fetch user");
+      // In a real app, this would be an API request
+      // For now, return the mock user if logged in
+      if (mockUser) {
+        return mockUser;
       }
-      return res.json();
+      return null;
     },
+    initialData: mockUser,
   });
 
   const loginMutation = useMutation({
-    mutationFn: async (credentials: InsertUser) => {
-      const res = await apiRequest("POST", "/api/auth/login", credentials);
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || "Login failed");
+    mutationFn: async (credentials: LoginCredentials) => {
+      // Simulate API request delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Mock login logic
+      if (credentials.username && credentials.password.length >= 6) {
+        // In a real app, this would validate against a backend
+        const newUser = { ...MOCK_USER, username: credentials.username };
+        setMockUser(newUser);
+        localStorage.setItem('mockUser', JSON.stringify(newUser));
+        return newUser;
       }
-      return data.user;
+      
+      throw new Error("Invalid credentials. Username required and password must be at least 6 characters.");
     },
-    onSuccess: (user: User) => {
-      queryClient.setQueryData(["/api/auth/user"], user);
+    onSuccess: () => {
+      refetch();
       toast({
         title: "Success!",
         description: "You have been logged in successfully.",
@@ -64,16 +112,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   const registerMutation = useMutation({
-    mutationFn: async (userData: InsertUser) => {
-      const res = await apiRequest("POST", "/api/auth/register", userData);
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || "Registration failed");
+    mutationFn: async (userData: RegisterCredentials) => {
+      // Simulate API request delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Mock register logic
+      if (userData.username && userData.password.length >= 6) {
+        // In a real app, this would create a user in the backend
+        const newUser = { ...MOCK_USER, username: userData.username };
+        setMockUser(newUser);
+        localStorage.setItem('mockUser', JSON.stringify(newUser));
+        return newUser;
       }
-      return data.user;
+      
+      throw new Error("Invalid registration data. Username required and password must be at least 6 characters.");
     },
-    onSuccess: (user: User) => {
-      queryClient.setQueryData(["/api/auth/user"], user);
+    onSuccess: () => {
+      refetch();
       toast({
         title: "Success!",
         description: "Your account has been created successfully.",
@@ -90,10 +145,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest("POST", "/api/auth/logout");
+      // Simulate API request delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Clear mock user
+      setMockUser(null);
+      localStorage.removeItem('mockUser');
     },
     onSuccess: () => {
-      queryClient.setQueryData(["/api/auth/user"], null);
+      refetch();
       toast({
         title: "Success!",
         description: "You have been logged out successfully.",

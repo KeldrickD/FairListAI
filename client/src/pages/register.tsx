@@ -1,177 +1,117 @@
 import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
-import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Loader2 } from "lucide-react";
 import { Link, useLocation } from "wouter";
-import { Building2, Loader2 } from "lucide-react";
 
-const registerSchema = z.object({
-  username: z.string().min(3).max(50),
-  password: z.string().min(6).max(100),
-  confirmPassword: z.string().min(6).max(100),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-});
+export default function RegisterPage() {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const { registerMutation } = useAuth();
+  const [_, setLocation] = useLocation();
 
-type RegisterForm = z.infer<typeof registerSchema>;
+  const validatePasswords = () => {
+    if (password !== confirmPassword) {
+      setPasswordError("Passwords do not match");
+      return false;
+    }
+    if (password.length < 6) {
+      setPasswordError("Password must be at least 6 characters");
+      return false;
+    }
+    setPasswordError("");
+    return true;
+  };
 
-export default function Register() {
-  const { toast } = useToast();
-  const [, setLocation] = useLocation();
-
-  const form = useForm<RegisterForm>({
-    resolver: zodResolver(registerSchema),
-    defaultValues: {
-      username: "",
-      password: "",
-      confirmPassword: "",
-    },
-  });
-
-  const registerMutation = useMutation({
-    mutationFn: async (data: RegisterForm) => {
-      const { confirmPassword, ...registerData } = data;
-      const res = await apiRequest("POST", "/api/auth/register", registerData);
-      return res.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Success!",
-        description: "Your account has been created. Please login.",
-      });
-      setLocation("/login");
-    },
-    onError: (error: Error) => {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message,
-      });
-    },
-  });
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validatePasswords()) return;
+    
+    try {
+      await registerMutation.mutateAsync({ username, password });
+      setLocation("/dashboard");
+    } catch (error) {
+      // Error is handled by the mutation
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-      <nav className="border-b bg-white/50 backdrop-blur-sm fixed w-full z-50">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center space-x-2">
-            <Building2 className="h-6 w-6 text-primary" />
-            <span className="font-semibold text-xl">Listing Genie</span>
-          </Link>
-          <div className="flex items-center space-x-4">
-            <Button variant="ghost" asChild>
-              <Link href="/login">Login</Link>
+    <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-bold text-center">Create an account</CardTitle>
+          <CardDescription className="text-center">
+            Enter your information to create your account
+          </CardDescription>
+        </CardHeader>
+        <form onSubmit={handleSubmit}>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="username">Email or Username</Label>
+              <Input
+                id="username"
+                type="text"
+                placeholder="Enter your email or username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Create a password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                placeholder="Confirm your password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+              />
+              {passwordError && (
+                <p className="text-sm text-red-500">{passwordError}</p>
+              )}
+            </div>
+          </CardContent>
+          <CardFooter className="flex flex-col space-y-4">
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={registerMutation.isPending}
+            >
+              {registerMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating account...
+                </>
+              ) : (
+                "Register"
+              )}
             </Button>
-          </div>
-        </div>
-      </nav>
-
-      <main className="container mx-auto px-4 py-8 pt-24">
-        <div className="max-w-md mx-auto">
-          <Card className="shadow-lg border-primary/10">
-            <CardHeader>
-              <CardTitle className="text-2xl">Create an Account</CardTitle>
-              <CardDescription>
-                Register to start creating AI-powered listings
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Form {...form}>
-                <form
-                  onSubmit={form.handleSubmit((data) => registerMutation.mutate(data))}
-                  className="space-y-6"
-                >
-                  <FormField
-                    control={form.control}
-                    name="username"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Username</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="Choose a username"
-                            className="h-12"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Password</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="password"
-                            placeholder="Choose a password"
-                            className="h-12"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="confirmPassword"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Confirm Password</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="password"
-                            placeholder="Confirm your password"
-                            className="h-12"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <Button
-                    type="submit"
-                    className="w-full h-12"
-                    disabled={registerMutation.isPending}
-                  >
-                    {registerMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                        Creating Account...
-                      </>
-                    ) : (
-                      "Create Account"
-                    )}
-                  </Button>
-
-                  <p className="text-center text-sm text-muted-foreground">
-                    Already have an account?{" "}
-                    <Link href="/login" className="text-primary hover:underline">
-                      Login here
-                    </Link>
-                  </p>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
-        </div>
-      </main>
+            <div className="text-center text-sm">
+              Already have an account?{" "}
+              <Link href="/login" className="text-primary hover:underline">
+                Login
+              </Link>
+            </div>
+          </CardFooter>
+        </form>
+      </Card>
     </div>
   );
 }

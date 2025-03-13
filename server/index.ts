@@ -4,6 +4,9 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { storage } from "./storage";
 import dotenv from "dotenv";
+import { join } from 'path';
+import { drizzle } from 'drizzle-orm/node-postgres';
+import { Pool } from 'pg';
 
 // Load environment variables
 dotenv.config();
@@ -79,7 +82,20 @@ app.use((req, res, next) => {
   next();
 });
 
-(async () => {
+// Configuration
+const PORT = process.env.PORT || 4000;
+const DATABASE_URL = process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/fairlistai';
+const SESSION_SECRET = process.env.SESSION_SECRET || 'supersecret123';
+const NODE_ENV = process.env.NODE_ENV || 'development';
+
+// Database setup
+const pool = new Pool({
+  connectionString: DATABASE_URL,
+});
+
+export const db = drizzle(pool);
+
+async function main() {
   const server = await registerRoutes(app);
 
   // Global error handler
@@ -91,18 +107,30 @@ app.use((req, res, next) => {
     res.status(status).json({ message });
   });
 
-  if (app.get("env") === "development") {
-    await setupVite(app, server);
+  // Initialize storage
+  await storage.init();
+
+  // Serve static files in production, use Vite in development
+  if (NODE_ENV === 'production') {
+    const staticPath = join(__dirname, 'public');
+    app.use(express.static(staticPath));
+    
+    // Catch-all route for SPA
+    app.get('*', (req, res) => {
+      res.sendFile(join(staticPath, 'index.html'));
+    });
   } else {
-    serveStatic(app);
+    // Setup Vite middleware in development
+    await setupVite(app, server);
   }
 
-  const port = 5000;
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
+  // Start the server
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
   });
-})();
+}
+
+main().catch((err) => {
+  console.error('Failed to start server:', err);
+  process.exit(1);
+});
