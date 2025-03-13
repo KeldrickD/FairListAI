@@ -4,8 +4,10 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useToast } from '@/components/ui/use-toast'
 import { apiRequest } from '@/lib/api'
 
+type SubscriptionTierName = 'FREE' | 'BASIC' | 'PRO' | 'ENTERPRISE'
+
 interface SubscriptionTier {
-  name: string
+  name: SubscriptionTierName
   price: number
   features: string[]
   payPerUse?: {
@@ -16,7 +18,7 @@ interface SubscriptionTier {
 
 const subscriptionTiers: SubscriptionTier[] = [
   {
-    name: 'Basic',
+    name: 'BASIC',
     price: 9.99,
     features: [
       '5 listings per month',
@@ -26,7 +28,7 @@ const subscriptionTiers: SubscriptionTier[] = [
     ]
   },
   {
-    name: 'Pro',
+    name: 'PRO',
     price: 19.99,
     features: [
       'Unlimited listings',
@@ -37,7 +39,7 @@ const subscriptionTiers: SubscriptionTier[] = [
     ]
   },
   {
-    name: 'Enterprise',
+    name: 'ENTERPRISE',
     price: 49.99,
     features: [
       'Everything in Pro',
@@ -54,7 +56,7 @@ const subscriptionTiers: SubscriptionTier[] = [
 ]
 
 export default function Premium() {
-  const [selectedTier, setSelectedTier] = useState<SubscriptionTier | null>(null)
+  const [selectedTier, setSelectedTier] = useState<SubscriptionTierName | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
 

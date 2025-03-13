@@ -1,21 +1,30 @@
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/components/ui/use-toast'
 import { apiRequest } from '@/lib/api'
-import { useState, ChangeEvent } from 'react'
 
-export default function Login() {
+export default function Register() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
+    if (password !== confirmPassword) {
+      toast({
+        title: 'Error',
+        description: 'Passwords do not match',
+        variant: 'destructive',
+      })
+      return
+    }
 
+    setIsLoading(true)
     try {
-      const response = await apiRequest('/api/auth/login', {
+      const response = await apiRequest('/api/auth/register', {
         method: 'POST',
         body: JSON.stringify({ email, password }),
       })
@@ -23,15 +32,15 @@ export default function Login() {
       if (response.success) {
         toast({
           title: 'Success!',
-          description: 'You have been logged in successfully.',
+          description: 'Your account has been created successfully.',
         })
       } else {
-        throw new Error(response.message || 'Failed to log in')
+        throw new Error(response.message || 'Failed to create account')
       }
     } catch (error) {
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to log in',
+        description: error instanceof Error ? error.message : 'Failed to create account',
         variant: 'destructive',
       })
     } finally {
@@ -42,7 +51,7 @@ export default function Login() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-md mx-auto">
-        <h1 className="text-4xl font-bold text-center mb-8">Login</h1>
+        <h1 className="text-4xl font-bold text-center mb-8">Register</h1>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <Input
@@ -62,8 +71,17 @@ export default function Login() {
               required
             />
           </div>
+          <div>
+            <Input
+              type="password"
+              placeholder="Confirm Password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+            />
+          </div>
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? 'Logging in...' : 'Login'}
+            {isLoading ? 'Creating account...' : 'Register'}
           </Button>
         </form>
       </div>
