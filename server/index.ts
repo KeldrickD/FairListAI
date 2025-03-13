@@ -3,6 +3,10 @@ import session from "express-session";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { storage } from "./storage";
+import dotenv from "dotenv";
+
+// Load environment variables
+dotenv.config();
 
 declare module "express-session" {
   interface SessionData {
@@ -14,24 +18,27 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// CORS setup for development
+// CORS setup with environment variable
+const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:5000';
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Origin', corsOrigin);
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
-  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.header('Access-Control-Allow-Credentials', 'true');
   next();
 });
 
+// Session configuration with secure settings
 app.use(
   session({
-    secret: "your-secret-key",
+    secret: process.env.SESSION_SECRET || 'fallback-secret-key-change-in-production',
     resave: false,
     saveUninitialized: false,
     cookie: { 
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      sameSite: process.env.NODE_ENV === "production" ? 'strict' : 'lax'
     }
   })
 );

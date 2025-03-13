@@ -1,22 +1,28 @@
-interface RequestOptions extends RequestInit {
-  body?: any;
+export type ApiRequestOptions = {
+  method?: string
+  headers?: Record<string, string>
+  body?: string
 }
 
-export async function apiRequest(url: string, options: RequestOptions = {}) {
-  const { body, ...restOptions } = options;
+export async function apiRequest(
+  endpoint: string,
+  options: ApiRequestOptions = {}
+) {
+  const { method = 'GET', headers = {}, body } = options
 
-  const response = await fetch(url, {
-    ...restOptions,
+  const response = await fetch(endpoint, {
+    method,
     headers: {
       'Content-Type': 'application/json',
-      ...restOptions.headers,
+      ...headers,
     },
-    body: body ? JSON.stringify(body) : undefined,
-  });
+    body,
+    credentials: 'include',
+  })
 
   if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
+    throw new Error(`HTTP error! status: ${response.status}`)
   }
 
-  return response;
+  return response.json()
 } 

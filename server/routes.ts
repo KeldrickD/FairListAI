@@ -1,24 +1,92 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer } from "http";
 import { storage } from "./storage";
 import { generateListing, generateSEO, generateSocialMedia, generateVideoScript } from "./lib/openai";
-import { insertListingSchema, insertUserSchema, SUBSCRIPTION_TIERS, SUBSCRIPTION_PRICES, ADD_ON_PRICES } from "@shared/schema";
+import { insertListingSchema, insertUserSchema, SUBSCRIPTION_TIERS, SUBSCRIPTION_PRICES, ADD_ON_PRICES, type User } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcrypt";
 import Stripe from "stripe";
 
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error("Missing required environment variable: STRIPE_SECRET_KEY");
+// Initialize Stripe with development mode handling
+const isDevelopment = process.env.NODE_ENV !== 'production';
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY || (isDevelopment ? 'dummy_key_for_development' : '');
+const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET || (isDevelopment ? 'dummy_webhook_secret' : '');
+
+if (!isDevelopment && !process.env.STRIPE_SECRET_KEY) {
+  throw new Error("Stripe secret key is required in production mode");
 }
 
-// Initialize Stripe with the test secret key
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: "2023-10-16",
+if (!isDevelopment && !process.env.STRIPE_WEBHOOK_SECRET) {
+  throw new Error("Stripe webhook secret is required in production mode");
+}
+
+const stripe = new Stripe(stripeSecretKey, {
+  apiVersion: "2025-02-24.acacia" as const,
   typescript: true
 });
 
+// Helper to get raw body for Stripe webhook
+async function getRawBody(req: Request): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    
+    req.on('data', (chunk: Buffer) => {
+      chunks.push(chunk);
+    });
+    
+    req.on('end', () => {
+      resolve(Buffer.concat(chunks));
+    });
+    
+    req.on('error', reject);
+  });
+}
+
+// Helper function to validate session
+const validateSession = (req: any) => {
+  const userId = req.session?.userId;
+  if (!userId) {
+    throw new Error('Unauthorized');
+  }
+  return userId;
+};
+
+const VALID_SUBSCRIPTION_TIERS = ['basic', 'pro', 'enterprise', 'pay_per_use'] as const;
+type ValidSubscriptionTier = typeof VALID_SUBSCRIPTION_TIERS[number];
+
+interface PaymentRequestBody {
+  tier: keyof typeof SUBSCRIPTION_TIERS;
+  addOns?: Array<keyof typeof ADD_ON_PRICES>;
+}
+
+// Helper function to convert tier to storage format
+const getStorageTier = (tier: ValidSubscriptionTier): string => {
+  if (tier === 'pay_per_use') return 'PAY_PER_USE';
+  return tier.toUpperCase();
+};
 
 export async function registerRoutes(app: Express) {
+  // Auth middleware
+  const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
+    const userId = req.session?.userId;
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(401).json({ message: "User not found" });
+    }
+    
+    req.user = user;
+    next();
+  };
+
+  // Health check endpoint
+  app.get("/api/health", (_req, res) => {
+    res.json({ status: "ok" });
+  });
+
   app.post("/api/auth/register", async (req, res) => {
     try {
       const userData = insertUserSchema.parse(req.body);
@@ -41,7 +109,9 @@ export async function registerRoutes(app: Express) {
       // Set session
       req.session.userId = user.id;
 
-      return res.status(201).json({ user });
+      // Remove password from response
+      const { password, ...userWithoutPassword } = user;
+      return res.status(201).json({ user: userWithoutPassword });
     } catch (error) {
       console.error("Registration error:", error);
       return res.status(400).json({
@@ -69,7 +139,9 @@ export async function registerRoutes(app: Express) {
       // Set session
       req.session.userId = user.id;
 
-      return res.json({ user });
+      // Remove password from response
+      const { password: _, ...userWithoutPassword } = user;
+      return res.json({ user: userWithoutPassword });
     } catch (error) {
       console.error("Login error:", error);
       return res.status(400).json({
@@ -90,12 +162,9 @@ export async function registerRoutes(app: Express) {
 
   app.post("/api/create-payment-intent", async (req, res) => {
     try {
-      const userId = req.session?.userId;
-      if (!userId) {
-        return res.status(401).json({ message: "Unauthorized" });
-      }
-
+      const userId = validateSession(req);
       const user = await storage.getUser(userId);
+      
       if (!user) {
         return res.status(401).json({ message: "User not found" });
       }
@@ -104,42 +173,34 @@ export async function registerRoutes(app: Express) {
         return res.status(400).json({ message: "User is already subscribed" });
       }
 
-      const { tier, addOns = [] } = req.body;
+      const { tier, addOns = [] } = req.body as PaymentRequestBody;
+      const normalizedTier = tier.toLowerCase() as ValidSubscriptionTier;
 
-      // Validate the tier is supported
-      if (!tier || !Object.values(SUBSCRIPTION_TIERS).includes(tier)) {
+      if (!VALID_SUBSCRIPTION_TIERS.includes(normalizedTier)) {
         return res.status(400).json({ message: "Invalid subscription tier" });
       }
 
-      // Calculate total amount including add-ons
-      let amount;
-      if (tier === SUBSCRIPTION_TIERS.PAY_PER_USE) {
+      let amount: number = 0;
+      if (normalizedTier === 'pay_per_use') {
         amount = 500; // $5.00 per listing
-      } else {
-        // For subscription tiers, use the subscription prices
-        amount = SUBSCRIPTION_PRICES[tier.toLowerCase()];
-        // Add any selected add-ons
-        addOns.forEach(addon => {
-          if (ADD_ON_PRICES[addon]) {
-            amount += ADD_ON_PRICES[addon];
-          }
+      } else if (normalizedTier in SUBSCRIPTION_PRICES) {
+        amount = SUBSCRIPTION_PRICES[normalizedTier as keyof typeof SUBSCRIPTION_PRICES];
+        addOns.forEach((addon: keyof typeof ADD_ON_PRICES) => {
+          amount += ADD_ON_PRICES[addon];
         });
+      } else {
+        return res.status(400).json({ message: "Invalid subscription tier pricing" });
       }
 
-      console.log('Creating payment intent:', { tier, amount, addOns }); // Add logging
-
-      // Ensure amount is a valid number
-      if (typeof amount !== 'number' || isNaN(amount) || amount <= 0) {
-        return res.status(400).json({ message: "Invalid payment amount" });
-      }
+      const storageTier = getStorageTier(normalizedTier);
 
       const paymentIntent = await stripe.paymentIntents.create({
-        amount: Math.round(amount), // Ensure amount is an integer
+        amount: Math.round(amount),
         currency: "usd",
         payment_method_types: ['card'],
         metadata: {
           userId: user.id.toString(),
-          tier,
+          tier: storageTier,
           addOns: JSON.stringify(addOns)
         },
       });
@@ -156,59 +217,63 @@ export async function registerRoutes(app: Express) {
   });
 
   app.post("/api/webhooks/stripe", async (req, res) => {
-    const sig = req.headers["stripe-signature"];
-    let event;
-
     try {
-      event = stripe.webhooks.constructEvent(
-        req.body,
-        sig,
-        process.env.STRIPE_WEBHOOK_SECRET!
-      );
-    } catch (err: any) {
-      console.error("Webhook signature verification failed:", err);
-      return res.status(400).send(`Webhook Error: ${err.message}`);
-    }
-
-    if (event.type === "payment_intent.succeeded") {
-      const paymentIntent = event.data.object;
-      const userId = parseInt(paymentIntent.metadata.userId);
-      const tier = paymentIntent.metadata.tier;
-      const addOns = JSON.parse(paymentIntent.metadata.addOns || "[]");
-
-      try {
-        // First upgrade the user's subscription tier
-        await storage.upgradeToPremium(userId, tier as keyof typeof SUBSCRIPTION_TIERS);
-
-        // Then enable any purchased add-ons
-        if (addOns.length > 0) {
-          await storage.updateUserAddOns(userId, addOns);
-        }
-
-        console.log(`Successfully processed payment for user ${userId}`, {
-          tier,
-          addOns,
-        });
-      } catch (error) {
-        console.error("Error processing successful payment:", error);
-        return res.status(500).json({ message: "Failed to process payment" });
+      const rawBody = await getRawBody(req);
+      const sig = req.headers["stripe-signature"];
+      
+      if (!sig) {
+        return res.status(400).json({ message: "No Stripe signature found" });
       }
-    }
 
-    res.json({ received: true });
+      let event;
+      try {
+        event = stripe.webhooks.constructEvent(
+          rawBody,
+          sig,
+          process.env.STRIPE_WEBHOOK_SECRET!
+        );
+      } catch (err: any) {
+        console.error("Webhook signature verification failed:", err);
+        return res.status(400).json({ message: `Webhook Error: ${err.message}` });
+      }
+
+      if (event.type === "payment_intent.succeeded") {
+        const paymentIntent = event.data.object as Stripe.PaymentIntent;
+        const userId = parseInt(paymentIntent.metadata.userId);
+        const tierValue = paymentIntent.metadata.tier as typeof SUBSCRIPTION_TIERS[keyof typeof SUBSCRIPTION_TIERS];
+        const addOns = JSON.parse(paymentIntent.metadata.addOns || "[]");
+
+        try {
+          // Only upgrade premium features for supported tiers
+          if (tierValue === SUBSCRIPTION_TIERS.BASIC || tierValue === SUBSCRIPTION_TIERS.PRO || tierValue === SUBSCRIPTION_TIERS.ENTERPRISE) {
+            await storage.upgradeToPremium(userId, tierValue.toUpperCase() as "BASIC" | "PRO" | "ENTERPRISE");
+          }
+
+          // Then enable any purchased add-ons
+          if (addOns.length > 0) {
+            await storage.updateUserAddOns(userId, addOns);
+          }
+
+          console.log(`Successfully processed payment for user ${userId}`, {
+            tier: tierValue,
+            addOns,
+          });
+        } catch (error) {
+          console.error("Error processing successful payment:", error);
+          return res.status(500).json({ message: "Failed to process payment" });
+        }
+      }
+
+      res.json({ received: true });
+    } catch (error) {
+      console.error("Error handling webhook:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
   });
 
-  app.post("/api/listings/generate", async (req, res) => {
+  app.post("/api/listings/generate", requireAuth, async (req, res) => {
     try {
-      const userId = req.session?.userId;
-      if (!userId) {
-        return res.status(401).json({ message: "Unauthorized" });
-      }
-
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(401).json({ message: "User not found" });
-      }
+      const user = req.user!;
 
       // Check free tier limits
       if (!user.isPremium && user.listingsThisMonth >= 5) {
@@ -240,7 +305,7 @@ export async function registerRoutes(app: Express) {
 
       // Save listing with add-on content
       const listing = await storage.createListing(
-        userId,
+        user.id,
         validatedData,
         generatedContent.listing,
         seoOptimized,
@@ -248,20 +313,13 @@ export async function registerRoutes(app: Express) {
         videoScript
       );
 
-      await storage.updateUserListingCount(userId);
+      // Update user's listing count
+      await storage.updateUserListingCount(user.id);
 
-      return res.json({
-        listing,
-        generated: {
-          ...generatedContent,
-          seoOptimized,
-          socialMediaContent,
-          videoScript
-        }
-      });
+      return res.json({ listing });
     } catch (error) {
       console.error("Error generating listing:", error);
-      return res.status(400).json({
+      return res.status(500).json({
         message: error instanceof Error ? error.message : "Failed to generate listing"
       });
     }
@@ -304,6 +362,14 @@ export async function registerRoutes(app: Express) {
     }
   });
 
-  const httpServer = createServer(app);
-  return httpServer;
+  return createServer(app);
+}
+
+// Add type augmentation for Express Request
+declare global {
+  namespace Express {
+    interface Request {
+      user: User;
+    }
+  }
 }

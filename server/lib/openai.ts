@@ -1,10 +1,19 @@
 import OpenAI from "openai";
 
-if (!process.env.OPENAI_API_KEY) {
-  throw new Error("OPENAI_API_KEY is required");
-}
+const openai = new OpenAI({ 
+  apiKey: process.env.OPENAI_API_KEY || 'dummy_key_for_development'
+});
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// Mock response for development when no API key is provided
+const mockOpenAIResponse = {
+  listing: "This is a mock listing for development. Please add your OpenAI API key to generate real listings.",
+  seoScore: 0,
+  compliance: {
+    isCompliant: true,
+    violations: [],
+    suggestions: ["Add your OpenAI API key to generate real suggestions"]
+  }
+};
 
 export const BANNED_PHRASES = [
   "perfect for",
@@ -46,6 +55,12 @@ export async function generateListing(listing: ListingInput): Promise<{
   seoScore: number;
   compliance: ComplianceCheck;
 }> {
+  // Return mock response if no API key is provided
+  if (!process.env.OPENAI_API_KEY) {
+    console.warn("No OpenAI API key provided. Using mock response.");
+    return mockOpenAIResponse;
+  }
+
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-4",
@@ -110,6 +125,11 @@ export async function generateListing(listing: ListingInput): Promise<{
 }
 
 export async function generateSEO(listing: ListingInput, generatedListing: string): Promise<string> {
+  if (!process.env.OPENAI_API_KEY) {
+    console.warn("No OpenAI API key provided. Using mock response.");
+    return "Mock SEO-optimized content. Add your OpenAI API key to generate real SEO content.";
+  }
+
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-4",
@@ -156,6 +176,11 @@ export async function generateSEO(listing: ListingInput, generatedListing: strin
 }
 
 export async function generateSocialMedia(listing: ListingInput, generatedListing: string): Promise<string> {
+  if (!process.env.OPENAI_API_KEY) {
+    console.warn("No OpenAI API key provided. Using mock response.");
+    return "Mock social media content. Add your OpenAI API key to generate real social media content. #MockContent #AddAPIKey";
+  }
+
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-4",
@@ -202,6 +227,11 @@ export async function generateSocialMedia(listing: ListingInput, generatedListin
 }
 
 export async function generateVideoScript(listing: ListingInput, generatedListing: string): Promise<string> {
+  if (!process.env.OPENAI_API_KEY) {
+    console.warn("No OpenAI API key provided. Using mock response.");
+    return "Mock video script. Add your OpenAI API key to generate real video scripts.\n[Camera Direction: Add your API key first]";
+  }
+
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-4",
