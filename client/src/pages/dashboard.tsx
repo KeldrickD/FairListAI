@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Crown, AlertCircle, CheckCircle, Plus, Pencil, Download, Search, SortAsc, Filter, Building2, Sparkles, Video, Share2, CircleCheck, PieChart, List, ChevronRight, FileText } from "lucide-react";
+import { Loader2, Crown, AlertCircle, CheckCircle, Plus, Pencil, Download, Search, SortAsc, Filter, Building2, Sparkles, Video, Share2, PieChart, List, ChevronRight, FileText } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -304,7 +304,7 @@ export default function DashboardPage() {
               <CardTitle className="text-sm font-medium">
                 Avg. Compliance Score
               </CardTitle>
-              <CircleCheck className="h-4 w-4 text-muted-foreground" />
+              <CheckCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.avgComplianceScore}%</div>
@@ -410,7 +410,7 @@ export default function DashboardPage() {
                 <Link href="/compliance-checker" className="block">
                   <div className="flex items-center gap-4 p-3 border rounded-lg hover:bg-accent transition-colors">
                     <div className="flex items-center justify-center w-10 h-10 rounded-md bg-primary/10">
-                      <CircleCheck className="h-5 w-5 text-primary" />
+                      <CheckCircle className="h-5 w-5 text-primary" />
                     </div>
                     <div>
                       <h3 className="font-medium">Check Compliance</h3>
