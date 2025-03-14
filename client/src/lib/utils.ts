@@ -1,12 +1,11 @@
 import { type ClassValue, clsx } from "clsx"
-import { twMerge } from "tailwind-merge"
 
 /**
- * Combines multiple class values into a single className string
- * using clsx and tailwind-merge
+ * A simple utility function to merge Tailwind CSS classes
+ * This implementation is a fallback in case the tailwind-merge package has issues
  */
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return clsx(inputs)
 }
 
 /**
@@ -20,9 +19,13 @@ export function formatCurrency(amount: number): string {
 }
 
 /**
- * Format a date to a readable string
+ * Format a date to a human-readable string
  */
-export function formatDate(date: Date): string {
+export function formatDate(date: Date | string): string {
+  if (typeof date === 'string') {
+    date = new Date(date)
+  }
+  
   return new Intl.DateTimeFormat('en-US', {
     year: 'numeric',
     month: 'long',
@@ -31,13 +34,11 @@ export function formatDate(date: Date): string {
 }
 
 /**
- * Truncate a string to a specified length
+ * Truncates text to a specified length and adds ellipsis
  */
-export function truncateString(str: string, num: number): string {
-  if (str.length <= num) {
-    return str
-  }
-  return str.slice(0, num) + '...'
+export function truncateText(text: string, maxLength: number = 100): string {
+  if (text.length <= maxLength) return text
+  return `${text.substring(0, maxLength)}...`
 }
 
 /**
