@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { DashboardLayout } from "@/components/layouts/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowLeft } from "lucide-react";
 
 // Define property types
 const propertyTypes = [
@@ -33,9 +33,12 @@ const statusOptions = [
   { value: "published", label: "Published" },
 ];
 
-export default function NewListingPage() {
+export default function EditListingPage() {
   const router = useRouter();
+  const { id } = router.query;
   const { toast } = useToast();
+  
+  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Form state
@@ -50,6 +53,67 @@ export default function NewListingPage() {
     price: "",
     status: "draft",
   });
+  
+  // Fetch listing details
+  useEffect(() => {
+    const fetchListing = async () => {
+      if (!id) return;
+      
+      setIsLoading(true);
+      
+      try {
+        // Make API request
+        const response = await apiRequest('GET', `/api/listings/${id}`);
+        const data = await response.json();
+        
+        // Format data for form
+        setFormData({
+          title: data.title || "",
+          description: data.description || "",
+          propertyType: data.propertyType || "",
+          bedrooms: data.bedrooms?.toString() || "",
+          bathrooms: data.bathrooms?.toString() || "",
+          squareFeet: data.squareFeet?.toString() || "",
+          location: data.location || "",
+          price: data.price?.toString() || "",
+          status: data.status || "draft",
+        });
+      } catch (error) {
+        console.error("Error fetching listing:", error);
+        
+        // Fallback to mock data in development
+        if (process.env.NODE_ENV === 'development') {
+          console.warn("Using mock listing data in development mode");
+          
+          // Mock listing data for development
+          setFormData({
+            title: "Beautiful 3 Bedroom House in Portland",
+            description: "This stunning property features an open floor plan, hardwood floors, and a newly renovated kitchen. The spacious backyard is perfect for entertaining, and the location provides easy access to schools, parks, and shopping centers.",
+            propertyType: "house",
+            bedrooms: "3",
+            bathrooms: "2",
+            squareFeet: "1800",
+            location: "Portland, OR",
+            price: "450000",
+            status: "published",
+          });
+        } else {
+          toast({
+            variant: "error",
+            title: "Error",
+            description: "Failed to load listing details. Please try again.",
+          });
+          
+          // Navigate back to listings page
+          router.push('/listings');
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchListing();
+  }, [id, router, toast]);
   
   // Handle input change
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -83,33 +147,32 @@ export default function NewListingPage() {
       };
       
       // Make API request
-      const response = await apiRequest('POST', '/api/listings', { body: listingData });
-      const data = await response.json();
+      await apiRequest('PUT', `/api/listings/${id}`, { body: listingData });
       
       toast({
         title: "Success",
-        description: "Listing created successfully!",
+        description: "Listing updated successfully!",
       });
       
-      // Redirect to listings page or the new listing
-      router.push(`/listings/${data.id}`);
+      // Redirect to listing detail page
+      router.push(`/listings/${id}`);
     } catch (error) {
-      console.error("Error creating listing:", error);
+      console.error("Error updating listing:", error);
       
       // In development, simulate success
       if (process.env.NODE_ENV === 'development') {
         toast({
           title: "Development Mode",
-          description: "Listing created successfully (simulated).",
+          description: "Listing updated successfully (simulated).",
         });
         
-        // Redirect to listings page
-        router.push('/listings');
+        // Redirect to listing detail page
+        router.push(`/listings/${id}`);
       } else {
         toast({
           variant: "error",
           title: "Error",
-          description: "Failed to create listing. Please try again.",
+          description: "Failed to update listing. Please try again.",
         });
       }
     } finally {
@@ -117,12 +180,33 @@ export default function NewListingPage() {
     }
   };
   
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex justify-center items-center min-h-[60vh]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+  
   return (
     <DashboardLayout>
       <div className="flex flex-col gap-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Create New Listing</h1>
-          <Button variant="outline" onClick={() => router.push('/listings')}>
+          <div>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="mb-2" 
+              onClick={() => router.push(`/listings/${id}`)}
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Listing
+            </Button>
+            <h1 className="text-3xl font-bold">Edit Listing</h1>
+          </div>
+          <Button variant="outline" onClick={() => router.push(`/listings/${id}`)}>
             Cancel
           </Button>
         </div>
@@ -132,7 +216,7 @@ export default function NewListingPage() {
             <CardHeader>
               <CardTitle>Listing Details</CardTitle>
               <CardDescription>
-                Enter the details of your property listing.
+                Update the details of your property listing.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -296,7 +380,7 @@ export default function NewListingPage() {
               <Button 
                 type="button" 
                 variant="outline" 
-                onClick={() => router.push('/listings')}
+                onClick={() => router.push(`/listings/${id}`)}
               >
                 Cancel
               </Button>
@@ -304,10 +388,10 @@ export default function NewListingPage() {
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating...
+                    Updating...
                   </>
                 ) : (
-                  'Create Listing'
+                  'Update Listing'
                 )}
               </Button>
             </CardFooter>
@@ -316,4 +400,4 @@ export default function NewListingPage() {
       </div>
     </DashboardLayout>
   );
-}
+} 
