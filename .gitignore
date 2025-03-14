@@ -1,0 +1,102 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build files
+dist/
+build/
+.next/
+out/
+.output/
+
+# Cache
+.cache/
+.npm
+.eslintcache
+.vercel
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Misc
+.DS_Store
+.turbo
+coverage/
+
+# Production build files
+/build
+/dist
+*/dist
+*/build
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Local env files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Vercel
+.vercel
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# misc
+*.pem
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+dist
+server/public
+vite.config.ts.*
+*.tar.gz

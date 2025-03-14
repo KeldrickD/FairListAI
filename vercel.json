@@ -1,0 +1,39 @@
+{
+  "buildCommand": "node vercel-build.js",
+  "outputDirectory": "client/dist",
+  "installCommand": "npm install",
+  "framework": "vite",
+  "env": {
+    "NODE_OPTIONS": "--max-old-space-size=3072"
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1",
+      "headers": {
+        "Cache-Control": "no-cache, no-store, must-revalidate"
+      }
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/client/(.*)",
+      "dest": "/client/index.html"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
+} 
