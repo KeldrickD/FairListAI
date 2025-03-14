@@ -1,12 +1,39 @@
 {
-  "buildCommand": "cd client && npm install --force && npm run build",
+  "buildCommand": "node vercel-build.js",
   "outputDirectory": "client/dist",
-  "installCommand": "npm install --no-save",
+  "installCommand": "npm install",
   "framework": "vite",
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
-  ],
   "env": {
-    "NODE_OPTIONS": "--max-old-space-size=4096"
-  }
+    "NODE_OPTIONS": "--max-old-space-size=3072"
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1",
+      "headers": {
+        "Cache-Control": "no-cache, no-store, must-revalidate"
+      }
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/client/(.*)",
+      "dest": "/client/index.html"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
 } 
