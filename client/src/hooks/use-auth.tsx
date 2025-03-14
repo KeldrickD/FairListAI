@@ -1,17 +1,18 @@
 import { createContext, ReactNode, useContext, useState, useEffect } from "react";
-import { useToast } from "./use-toast";
+import { useToast } from "@/components/ui/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 // Define user types
 export type User = {
   id: number;
+  email: string;
   username: string;
+  name?: string;
+  role: string;
   subscriptionTier: string;
   isPremium: boolean;
   listingsThisMonth?: number;
   listingCredits?: number;
-  seoEnabled?: boolean;
-  socialMediaEnabled?: boolean;
-  videoScriptsEnabled?: boolean;
 };
 
 export type LoginCredentials = {
@@ -20,6 +21,7 @@ export type LoginCredentials = {
 };
 
 export type RegisterCredentials = {
+  email: string;
   username: string;
   password: string;
   name?: string;
@@ -45,69 +47,145 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-// Mock user for development
+// Fallback mock user for development if API is not available
 const MOCK_USER: User = {
   id: 1,
+  email: "demo@example.com",
   username: "demo@example.com",
+  role: "user",
   subscriptionTier: "free",
   isPremium: false,
   listingsThisMonth: 3,
   listingCredits: 10,
-  seoEnabled: true,
-  socialMediaEnabled: true,
-  videoScriptsEnabled: false,
 };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
-  const [mockUser, setMockUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   
   // Load user from localStorage on initial mount
   useEffect(() => {
-    const storedUser = localStorage.getItem('mockUser');
-    if (storedUser) {
+    const loadUser = async () => {
+      setIsLoading(true);
+      
       try {
-        setMockUser(JSON.parse(storedUser));
+        // Try to get user from token in localStorage
+        const token = localStorage.getItem('accessToken');
+        
+        if (token) {
+          try {
+            // Verify token and get user data
+            const response = await apiRequest('GET', '/api/auth/me');
+            const userData = await response.json();
+            setUser(userData);
+          } catch (err) {
+            // Token might be invalid, try to refresh
+            const refreshToken = localStorage.getItem('refreshToken');
+            
+            if (refreshToken) {
+              try {
+                const refreshResponse = await apiRequest('POST', '/api/auth/refresh', { refreshToken });
+                const { accessToken } = await refreshResponse.json();
+                
+                localStorage.setItem('accessToken', accessToken);
+                
+                // Try again with new token
+                const userResponse = await apiRequest('GET', '/api/auth/me');
+                const userData = await userResponse.json();
+                setUser(userData);
+              } catch (refreshErr) {
+                // Refresh failed, clear tokens
+                localStorage.removeItem('accessToken');
+                localStorage.removeItem('refreshToken');
+                setUser(null);
+              }
+            } else {
+              // No refresh token, clear access token
+              localStorage.removeItem('accessToken');
+              setUser(null);
+            }
+          }
+        } else {
+          setUser(null);
+        }
       } catch (e) {
-        localStorage.removeItem('mockUser');
+        console.error("Error loading user:", e);
+        // Fallback to mock user in development
+        if (process.env.NODE_ENV === 'development') {
+          const mockUserData = localStorage.getItem('mockUser');
+          if (mockUserData) {
+            try {
+              setUser(JSON.parse(mockUserData));
+            } catch {
+              localStorage.removeItem('mockUser');
+              setUser(null);
+            }
+          } else {
+            setUser(null);
+          }
+        } else {
+          setUser(null);
+        }
+      } finally {
+        setIsLoading(false);
       }
-    }
-    setIsLoading(false);
+    };
+    
+    loadUser();
   }, []);
 
   const loginMutation = {
     mutate: async (credentials: LoginCredentials) => {
       setIsLoading(true);
+      setError(null);
       
       try {
-        // Simulate API request delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Call login API
+        const response = await apiRequest('POST', '/api/auth/login', credentials);
+        const { user, tokens } = await response.json();
         
-        // Mock login logic
-        if (credentials.username && credentials.password.length >= 6) {
-          // In a real app, this would validate against a backend
-          const newUser = { ...MOCK_USER, username: credentials.username };
-          setMockUser(newUser);
-          localStorage.setItem('mockUser', JSON.stringify(newUser));
-          
-          toast({
-            title: "Success!",
-            description: "You have been logged in successfully.",
-          });
-        } else {
-          throw new Error("Invalid credentials. Username required and password must be at least 6 characters.");
+        // Store tokens
+        localStorage.setItem('accessToken', tokens.accessToken);
+        if (tokens.refreshToken) {
+          localStorage.setItem('refreshToken', tokens.refreshToken);
         }
-      } catch (err) {
-        const error = err instanceof Error ? err : new Error("An unknown error occurred");
-        setError(error);
+        
+        setUser(user);
         
         toast({
-          variant: "destructive",
-          title: "Login failed",
-          description: error.message,
+          title: "Success!",
+          description: "You have been logged in successfully.",
         });
+      } catch (err) {
+        // Fallback to mock login in development
+        if (process.env.NODE_ENV === 'development') {
+          console.warn("Using mock login in development mode");
+          
+          // Mock login logic
+          if (credentials.username && credentials.password.length >= 6) {
+            const mockUser = { ...MOCK_USER, username: credentials.username, email: credentials.username };
+            localStorage.setItem('mockUser', JSON.stringify(mockUser));
+            setUser(mockUser);
+            
+            toast({
+              title: "Success! (Development Mode)",
+              description: "You have been logged in with mock data.",
+            });
+          } else {
+            throw new Error("Invalid credentials. Username required and password must be at least 6 characters.");
+          }
+        } else {
+          const error = err instanceof Error ? err : new Error("An unknown error occurred");
+          setError(error);
+          
+          toast({
+            variant: "destructive",
+            title: "Login failed",
+            description: error.message,
+          });
+        }
       } finally {
         setIsLoading(false);
       }
@@ -118,34 +196,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const registerMutation = {
     mutate: async (userData: RegisterCredentials) => {
       setIsLoading(true);
+      setError(null);
       
       try {
-        // Simulate API request delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Call register API
+        const response = await apiRequest('POST', '/api/auth/register', userData);
+        const { user, tokens } = await response.json();
         
-        // Mock register logic
-        if (userData.username && userData.password.length >= 6) {
-          // In a real app, this would create a user in the backend
-          const newUser = { ...MOCK_USER, username: userData.username };
-          setMockUser(newUser);
-          localStorage.setItem('mockUser', JSON.stringify(newUser));
-          
-          toast({
-            title: "Success!",
-            description: "Your account has been created successfully.",
-          });
-        } else {
-          throw new Error("Invalid registration data. Username required and password must be at least 6 characters.");
+        // Store tokens
+        localStorage.setItem('accessToken', tokens.accessToken);
+        if (tokens.refreshToken) {
+          localStorage.setItem('refreshToken', tokens.refreshToken);
         }
-      } catch (err) {
-        const error = err instanceof Error ? err : new Error("An unknown error occurred");
-        setError(error);
+        
+        setUser(user);
         
         toast({
-          variant: "destructive",
-          title: "Registration failed",
-          description: error.message,
+          title: "Success!",
+          description: "Your account has been created successfully.",
         });
+      } catch (err) {
+        // Fallback to mock register in development
+        if (process.env.NODE_ENV === 'development') {
+          console.warn("Using mock registration in development mode");
+          
+          // Mock register logic
+          if (userData.username && userData.password.length >= 6) {
+            const mockUser = { ...MOCK_USER, username: userData.username, email: userData.email || userData.username };
+            localStorage.setItem('mockUser', JSON.stringify(mockUser));
+            setUser(mockUser);
+            
+            toast({
+              title: "Success! (Development Mode)",
+              description: "Your account has been created with mock data.",
+            });
+          } else {
+            throw new Error("Invalid registration data. Username required and password must be at least 6 characters.");
+          }
+        } else {
+          const error = err instanceof Error ? err : new Error("An unknown error occurred");
+          setError(error);
+          
+          toast({
+            variant: "destructive",
+            title: "Registration failed",
+            description: error.message,
+          });
+        }
       } finally {
         setIsLoading(false);
       }
@@ -156,26 +253,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logoutMutation = {
     mutate: async () => {
       setIsLoading(true);
+      setError(null);
       
       try {
-        // Simulate API request delay
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Call logout API
+        await apiRequest('POST', '/api/auth/logout');
         
-        // Clear mock user
-        setMockUser(null);
-        localStorage.removeItem('mockUser');
+        // Clear tokens
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('mockUser'); // Also clear mock user if any
+        
+        setUser(null);
         
         toast({
           title: "Success!",
           description: "You have been logged out successfully.",
         });
       } catch (err) {
+        // In case of error, still log out locally
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('mockUser');
+        
+        setUser(null);
+        
+        // Show error toast
         const error = err instanceof Error ? err : new Error("An unknown error occurred");
         setError(error);
         
         toast({
           variant: "destructive",
-          title: "Logout failed",
+          title: "Error during logout",
           description: error.message,
         });
       } finally {
@@ -188,12 +297,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider
       value={{
-        user: mockUser,
+        user,
         isLoading,
         error,
         loginMutation,
-        logoutMutation,
         registerMutation,
+        logoutMutation
       }}
     >
       {children}
@@ -203,8 +312,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
+  
   if (!context) {
     throw new Error("useAuth must be used within an AuthProvider");
   }
+  
   return context;
 }
