@@ -26,31 +26,37 @@ export async function POST(request: Request) {
     Title: ${title}
     Description: ${description}
     
-    Evaluate the following metrics and provide specific suggestions for improvement:
+    Evaluate each metric below and provide a score from 0-10 and specific suggestions for improvement:
     1. Title Length (max 60 characters)
     2. Description Length (optimal 150-160 characters)
     3. Keyword Usage (natural integration of key terms)
     4. Readability (clear, engaging language)
     5. Call-to-Action (clear next steps)
     
-    Return ONLY a JSON array of objects with these exact properties:
-    [
-      {
-        "name": "Title Length",
-        "score": number between 0-10,
-        "maxScore": 10,
-        "suggestions": ["string"]
-      }
-    ]
-    
-    Do not include any other text or explanation. Only return the JSON array.`
+    Format your response as a JSON array with exactly these 5 metrics. Example:
+    {
+      "metrics": [
+        {
+          "name": "Title Length",
+          "score": 8,
+          "maxScore": 10,
+          "suggestions": ["Your title is good but could be shortened by 5 characters"]
+        },
+        {
+          "name": "Description Length",
+          "score": 7,
+          "maxScore": 10,
+          "suggestions": ["Add 20 more characters to reach optimal length"]
+        }
+      ]
+    }`
 
     const response = await openai.chat.completions.create({
       model: "gpt-4-turbo-preview",
       messages: [
         {
           role: "system",
-          content: "You are an SEO expert who analyzes real estate listings. You MUST return only valid JSON arrays containing SEO metrics."
+          content: "You are an SEO expert. Return ONLY a valid JSON object with a 'metrics' array containing exactly 5 metrics. Each metric must have a score between 0-10."
         },
         {
           role: "user",
@@ -64,20 +70,38 @@ export async function POST(request: Request) {
 
     let metrics: SeoMetric[] = []
     try {
-      const content = response.choices[0]?.message?.content || '[]'
-      const parsedMetrics = JSON.parse(content)
+      const content = response.choices[0]?.message?.content || '{"metrics": []}'
+      const parsed = JSON.parse(content)
       
-      // Validate metrics structure
-      if (!Array.isArray(parsedMetrics)) {
-        metrics = []
-      } else {
-        metrics = parsedMetrics.map(metric => ({
+      if (Array.isArray(parsed.metrics)) {
+        metrics = parsed.metrics.map(metric => ({
           name: String(metric.name || ''),
-          score: Number(metric.score) || 0,
-          maxScore: Number(metric.maxScore) || 10,
+          score: Math.min(Math.max(Number(metric.score) || 0, 0), 10),
+          maxScore: 10,
           suggestions: Array.isArray(metric.suggestions) ? metric.suggestions.map(String) : []
         }))
       }
+
+      // Ensure we have all 5 required metrics
+      const requiredMetrics = [
+        'Title Length',
+        'Description Length',
+        'Keyword Usage',
+        'Readability',
+        'Call-to-Action'
+      ]
+
+      // Add any missing metrics with default values
+      requiredMetrics.forEach(name => {
+        if (!metrics.some(m => m.name === name)) {
+          metrics.push({
+            name,
+            score: 0,
+            maxScore: 10,
+            suggestions: ['Analysis not available. Please try again.']
+          })
+        }
+      })
     } catch (error) {
       console.error('Error parsing SEO metrics:', error)
       metrics = []

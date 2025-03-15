@@ -36,20 +36,21 @@ export async function POST(request: Request) {
     })
 
     // Generate social media captions
-    const socialMediaPrompt = `Create engaging social media captions for the following property:
-    ${descriptionResponse.choices[0].message.content}
+    const socialMediaPrompt = `Create three short and engaging social media captions for this property. Each caption must be under 150 characters:
+
+    Property: ${descriptionResponse.choices[0].message.content}
     
-    Create three different captions:
-    1. Instagram: Short, engaging caption with emojis
-    2. Facebook: More detailed caption with key features
-    3. TikTok: Trendy, attention-grabbing caption with hashtags`
+    Format your response exactly like this (keep the labels):
+    Instagram: [Short caption with emojis - max 150 chars]
+    Facebook: [Engaging caption with key features - max 150 chars]
+    TikTok: [Trendy caption with hashtags - max 150 chars]`
 
     const socialMediaResponse = await openai.chat.completions.create({
       model: "gpt-4-turbo-preview",
       messages: [
         {
           role: "system",
-          content: "You are a social media expert who creates engaging real estate content."
+          content: "You are a social media expert who creates concise, engaging real estate content. Keep all captions under 150 characters."
         },
         {
           role: "user",
@@ -58,6 +59,7 @@ export async function POST(request: Request) {
       ],
       temperature: 0.7,
       max_tokens: 300,
+      response_format: { type: "text" }
     })
 
     // Parse social media response
@@ -67,20 +69,24 @@ export async function POST(request: Request) {
     // More robust parsing of social media captions
     const lines = socialMediaText.split('\n').map(line => line.trim()).filter(Boolean)
     for (const line of lines) {
-      if (line.toLowerCase().includes('instagram:')) {
-        instagram = line.substring(line.indexOf(':') + 1).trim()
-      } else if (line.toLowerCase().includes('facebook:')) {
-        facebook = line.substring(line.indexOf(':') + 1).trim()
-      } else if (line.toLowerCase().includes('tiktok:')) {
-        tiktok = line.substring(line.indexOf(':') + 1).trim()
+      const lowercaseLine = line.toLowerCase()
+      if (lowercaseLine.startsWith('instagram:')) {
+        instagram = line.substring('instagram:'.length).trim()
+      } else if (lowercaseLine.startsWith('facebook:')) {
+        facebook = line.substring('facebook:'.length).trim()
+      } else if (lowercaseLine.startsWith('tiktok:')) {
+        tiktok = line.substring('tiktok:'.length).trim()
       }
     }
 
-    // If any caption is missing, use the first available caption
-    const defaultCaption = instagram || facebook || tiktok || 'Check out this amazing property! ✨'
-    instagram = instagram || defaultCaption
-    facebook = facebook || defaultCaption
-    tiktok = tiktok || defaultCaption
+    // Ensure captions don't exceed 150 characters
+    const truncateCaption = (caption: string) => {
+      return caption.length > 150 ? caption.substring(0, 147) + '...' : caption
+    }
+
+    instagram = truncateCaption(instagram || 'Check out this amazing property! ✨')
+    facebook = truncateCaption(facebook || instagram)
+    tiktok = truncateCaption(tiktok || instagram)
 
     // Generate relevant hashtags
     const hashtagPrompt = `Generate 10 relevant real estate hashtags for a ${data.propertyType} in ${data.location}. 
