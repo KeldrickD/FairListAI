@@ -74,7 +74,7 @@ export async function POST(request: Request) {
       const parsed = JSON.parse(content)
       
       if (Array.isArray(parsed.metrics)) {
-        metrics = parsed.metrics.map(metric => ({
+        metrics = parsed.metrics.map((metric: any) => ({
           name: String(metric.name || ''),
           score: Math.min(Math.max(Number(metric.score) || 0, 0), 10),
           maxScore: 10,

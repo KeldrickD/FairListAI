@@ -9,6 +9,12 @@ interface ComplianceCheckRequest {
   text: string
 }
 
+interface ComplianceIssue {
+  type: string;
+  message: string;
+  suggestion: string;
+}
+
 export async function POST(request: Request) {
   try {
     const { text }: ComplianceCheckRequest = await request.json()
@@ -25,19 +31,25 @@ export async function POST(request: Request) {
     2. A clear message explaining the problem
     3. A specific suggestion for how to fix it
     
-    Format the response as a JSON array of objects with these properties:
+    Return ONLY a valid JSON object with this exact format:
     {
-      "type": "warning" | "error",
-      "message": "string",
-      "suggestion": "string"
-    }`
+      "issues": [
+        {
+          "type": "warning",
+          "message": "Description of the issue",
+          "suggestion": "How to fix it"
+        }
+      ]
+    }
+    
+    If no issues are found, return an empty array: {"issues": []}`
 
     const response = await openai.chat.completions.create({
       model: "gpt-4-turbo-preview",
       messages: [
         {
           role: "system",
-          content: "You are a Fair Housing compliance expert who analyzes property listings for potential violations."
+          content: "You are a Fair Housing compliance expert. Return ONLY valid JSON with an 'issues' array containing compliance problems."
         },
         {
           role: "user",
@@ -46,9 +58,25 @@ export async function POST(request: Request) {
       ],
       temperature: 0.3,
       max_tokens: 500,
+      response_format: { type: "json_object" }
     })
 
-    const issues = JSON.parse(response.choices[0].message.content || '[]')
+    let issues: ComplianceIssue[] = []
+    try {
+      const content = response.choices[0]?.message?.content || '{"issues": []}'
+      const parsed = JSON.parse(content)
+      
+      if (Array.isArray(parsed.issues)) {
+        issues = parsed.issues.map((issue: any) => ({
+          type: issue.type === 'error' ? 'error' : 'warning',
+          message: String(issue.message || ''),
+          suggestion: String(issue.suggestion || '')
+        }))
+      }
+    } catch (error) {
+      console.error('Error parsing compliance issues:', error)
+      issues = []
+    }
 
     return NextResponse.json({
       success: true,
