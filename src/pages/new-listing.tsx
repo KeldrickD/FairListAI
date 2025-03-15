@@ -3,6 +3,7 @@ import { PropertyForm, PropertyData } from '@/components/listing/PropertyForm'
 import { ListingPreview } from '@/components/listing/ListingPreview'
 import { ComplianceChecker } from '@/components/listing/ComplianceChecker'
 import { SeoOptimizer } from '@/components/listing/SeoOptimizer'
+import { SocialMediaOptimizer } from '@/components/listing/SocialMediaOptimizer'
 import { useToast } from '@/components/ui/use-toast'
 import { apiRequest } from '@/lib/api'
 
@@ -14,8 +15,12 @@ export default function NewListing() {
       instagram: string
       facebook: string
       tiktok: string
+      linkedin?: string
+      twitter?: string
     }
     hashtags: string[]
+    seoOptimized?: boolean
+    seoTitle?: string
   } | null>(null)
   const [complianceIssues, setComplianceIssues] = useState<Array<{
     type: 'warning' | 'error'
@@ -29,6 +34,7 @@ export default function NewListing() {
     suggestions: string[]
   }>>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [isPosting, setIsPosting] = useState(false)
   const { toast } = useToast()
 
   const handleSubmit = async (data: PropertyData) => {
@@ -142,6 +148,58 @@ export default function NewListing() {
     }
   }
 
+  // Handle social media optimization
+  const handleSocialMediaOptimize = (optimizedSocialMedia: {
+    instagram: string
+    facebook: string
+    tiktok: string
+    linkedin: string
+    twitter: string
+    hashtags: string[]
+  }) => {
+    if (!generatedListing) return;
+    
+    setGeneratedListing({
+      ...generatedListing,
+      socialMedia: {
+        instagram: optimizedSocialMedia.instagram,
+        facebook: optimizedSocialMedia.facebook,
+        tiktok: optimizedSocialMedia.tiktok,
+        linkedin: optimizedSocialMedia.linkedin,
+        twitter: optimizedSocialMedia.twitter
+      },
+      hashtags: optimizedSocialMedia.hashtags
+    });
+  }
+
+  // Handle social media posting
+  const handleSocialMediaPost = async (platform: string, content: string): Promise<boolean> => {
+    setIsPosting(true);
+    
+    try {
+      // Simulate API call to post to social media
+      // In a real implementation, this would call a social media API
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      toast({
+        title: 'Posted Successfully!',
+        description: `Your content has been posted to ${platform}.`,
+      });
+      
+      setIsPosting(false);
+      return true;
+    } catch (error) {
+      toast({
+        title: 'Post Failed',
+        description: `There was an error posting to ${platform}.`,
+        variant: 'destructive',
+      });
+      
+      setIsPosting(false);
+      return false;
+    }
+  }
+
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-4xl font-bold text-center mb-8">Create New Listing</h1>
@@ -177,6 +235,27 @@ export default function NewListing() {
                 ]}
                 title={`${propertyData.bedrooms} Bed, ${propertyData.bathrooms} Bath ${propertyData.propertyType} in ${propertyData.location}`}
                 description={generatedListing.description}
+                onOptimize={(optimizedData) => {
+                  // Create a new listing with optimized SEO content
+                  setGeneratedListing({
+                    ...generatedListing,
+                    description: optimizedData.description,
+                    seoOptimized: true,
+                    seoTitle: optimizedData.title
+                  });
+                  
+                  toast({
+                    title: 'SEO Optimized!',
+                    description: 'Your listing has been optimized for better search engine visibility.',
+                  });
+                }}
+              />
+              
+              <SocialMediaOptimizer
+                propertyData={propertyData}
+                generatedListing={generatedListing}
+                onOptimize={handleSocialMediaOptimize}
+                onPost={handleSocialMediaPost}
               />
             </>
           )}
