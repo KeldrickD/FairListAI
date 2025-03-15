@@ -1,16 +1,10 @@
 import { useState } from 'react'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm } from 'react-hook-form'
-import * as z from 'zod'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
+import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Separator } from '@/components/ui/separator'
-import { TemplateSelector } from './TemplateSelector'
 
 export interface PropertyData {
   propertyType: string
@@ -21,8 +15,8 @@ export interface PropertyData {
   location: string
   features: string[]
   additionalNotes: string
-  template: string
-  style: string
+  template?: string
+  style?: string
 }
 
 interface PropertyFormProps {
@@ -54,253 +48,223 @@ const commonFeatures = [
   { id: 'waterfront', label: 'Waterfront' },
 ]
 
-const formSchema = z.object({
-  propertyType: z.string().min(1, { message: 'Please select a property type' }),
-  bedrooms: z.coerce.number().min(0, { message: 'Bedrooms must be 0 or more' }),
-  bathrooms: z.coerce.number().min(0, { message: 'Bathrooms must be 0 or more' }),
-  squareFeet: z.coerce.number().min(1, { message: 'Square footage is required' }),
-  price: z.coerce.number().min(1, { message: 'Price is required' }),
-  location: z.string().min(1, { message: 'Location is required' }),
-  features: z.array(z.string()).optional(),
-  additionalNotes: z.string().optional(),
-  template: z.string().default('standard'),
-  style: z.string().default('professional')
-})
+// Templates and styles
+const templates = [
+  { value: 'standard', label: 'Standard Listing (200-300 words)' },
+  { value: 'short', label: 'Short Listing (100-150 words)' },
+  { value: 'luxury', label: 'Luxury Home (300-350 words)' },
+  { value: 'investment', label: 'Investment Property' },
+  { value: 'new-construction', label: 'New Construction' },
+  { value: 'senior', label: '55+ Community' },
+  { value: 'vacation', label: 'Vacation Rental' },
+  { value: 'fixer-upper', label: 'Fixer-Upper/Foreclosure' },
+]
+
+const styles = [
+  { value: 'professional', label: 'Standard Professional' },
+  { value: 'luxury', label: 'Luxury & High-End' },
+  { value: 'investor', label: 'Investor-Friendly' },
+  { value: 'casual', label: 'Casual & Friendly' },
+  { value: 'seo', label: 'SEO-Optimized' },
+  { value: 'storytelling', label: 'Storytelling / Lifestyle' },
+  { value: 'social', label: 'Social Media Style' },
+]
 
 export function PropertyForm({ onSubmit, isLoading }: PropertyFormProps) {
-  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([])
-  
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      propertyType: '',
-      bedrooms: 3,
-      bathrooms: 2,
-      squareFeet: 1500,
-      price: 350000,
-      location: '',
-      features: [],
-      additionalNotes: '',
-      template: 'standard',
-      style: 'professional'
-    },
+  const [formData, setFormData] = useState<PropertyData>({
+    propertyType: '',
+    bedrooms: 3,
+    bathrooms: 2,
+    squareFeet: 1500,
+    price: 350000,
+    location: '',
+    features: [],
+    additionalNotes: '',
+    template: 'standard',
+    style: 'professional'
   })
 
-  function handleSubmit(values: z.infer<typeof formSchema>) {
-    onSubmit({
-      ...values,
-      features: selectedFeatures,
-    })
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    onSubmit(formData)
   }
 
   const toggleFeature = (feature: string) => {
-    setSelectedFeatures(prev => 
-      prev.includes(feature)
-        ? prev.filter(f => f !== feature)
-        : [...prev, feature]
-    )
-    
-    form.setValue('features', selectedFeatures.includes(feature)
-      ? selectedFeatures.filter(f => f !== feature)
-      : [...selectedFeatures, feature]
-    )
+    setFormData(prev => ({
+      ...prev,
+      features: prev.features.includes(feature)
+        ? prev.features.filter(f => f !== feature)
+        : [...prev.features, feature]
+    }))
   }
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Property Details</CardTitle>
-            <CardDescription>
-              Enter the basic information about the property
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <FormField
-              control={form.control}
-              name="propertyType"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Property Type</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select property type" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {propertyTypes.map((type) => (
-                        <SelectItem key={type.value} value={type.value}>
-                          {type.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="p-6 border rounded-lg shadow-sm">
+        <h2 className="text-xl font-bold mb-4">Property Details</h2>
+        <p className="text-sm text-gray-500 mb-4">Enter the basic information about the property</p>
+        
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="propertyType">Property Type</Label>
+            <Select
+              value={formData.propertyType}
+              onValueChange={(value) => setFormData(prev => ({ ...prev, propertyType: value }))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select property type" />
+              </SelectTrigger>
+              <SelectContent>
+                {propertyTypes.map((type) => (
+                  <SelectItem key={type.value} value={type.value}>
+                    {type.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="bedrooms">Bedrooms</Label>
+              <Input
+                id="bedrooms"
+                type="number"
+                value={formData.bedrooms}
+                onChange={(e) => setFormData(prev => ({ ...prev, bedrooms: parseInt(e.target.value) || 0 }))}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="bathrooms">Bathrooms</Label>
+              <Input
+                id="bathrooms"
+                type="number"
+                value={formData.bathrooms}
+                onChange={(e) => setFormData(prev => ({ ...prev, bathrooms: parseFloat(e.target.value) || 0 }))}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="squareFeet">Square Feet</Label>
+              <Input
+                id="squareFeet"
+                type="number"
+                value={formData.squareFeet}
+                onChange={(e) => setFormData(prev => ({ ...prev, squareFeet: parseInt(e.target.value) || 0 }))}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="price">Price ($)</Label>
+              <Input
+                id="price"
+                type="number"
+                value={formData.price}
+                onChange={(e) => setFormData(prev => ({ ...prev, price: parseInt(e.target.value) || 0 }))}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="location">Location</Label>
+            <Input
+              id="location"
+              placeholder="City, State"
+              value={formData.location}
+              onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
             />
+          </div>
+        </div>
+      </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="bedrooms"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Bedrooms</FormLabel>
-                    <FormControl>
-                      <Input type="number" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+      <div className="p-6 border rounded-lg shadow-sm">
+        <h2 className="text-xl font-bold mb-4">Features & Amenities</h2>
+        <p className="text-sm text-gray-500 mb-4">Select the features that apply to this property</p>
+        
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {commonFeatures.map((feature) => (
+            <div key={feature.id} className="flex items-center space-x-2">
+              <Checkbox
+                id={feature.id}
+                checked={formData.features.includes(feature.label)}
+                onCheckedChange={() => toggleFeature(feature.label)}
               />
-
-              <FormField
-                control={form.control}
-                name="bathrooms"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Bathrooms</FormLabel>
-                    <FormControl>
-                      <Input type="number" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <label
+                htmlFor={feature.id}
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                {feature.label}
+              </label>
             </div>
+          ))}
+        </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="squareFeet"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Square Feet</FormLabel>
-                    <FormControl>
-                      <Input type="number" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+        <div className="mt-6 space-y-2">
+          <Label htmlFor="additionalNotes">Additional Notes</Label>
+          <Textarea
+            id="additionalNotes"
+            placeholder="Add any additional details about the property"
+            className="resize-none"
+            value={formData.additionalNotes}
+            onChange={(e) => setFormData(prev => ({ ...prev, additionalNotes: e.target.value }))}
+          />
+          <p className="text-sm text-gray-500">
+            Include any special features or selling points not covered above
+          </p>
+        </div>
+      </div>
 
-              <FormField
-                control={form.control}
-                name="price"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Price ($)</FormLabel>
-                    <FormControl>
-                      <Input type="number" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+      <div className="p-6 border rounded-lg shadow-sm">
+        <h2 className="text-xl font-bold mb-4">Listing Style</h2>
+        <p className="text-sm text-gray-500 mb-4">Choose how you want your listing to be written</p>
+        
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="template">Template</Label>
+            <Select
+              value={formData.template}
+              onValueChange={(value) => setFormData(prev => ({ ...prev, template: value }))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select template" />
+              </SelectTrigger>
+              <SelectContent>
+                {templates.map((template) => (
+                  <SelectItem key={template.value} value={template.value}>
+                    {template.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="style">Writing Style</Label>
+            <Select
+              value={formData.style}
+              onValueChange={(value) => setFormData(prev => ({ ...prev, style: value }))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select writing style" />
+              </SelectTrigger>
+              <SelectContent>
+                {styles.map((style) => (
+                  <SelectItem key={style.value} value={style.value}>
+                    {style.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
 
-            <FormField
-              control={form.control}
-              name="location"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Location</FormLabel>
-                  <FormControl>
-                    <Input placeholder="City, State" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Features & Amenities</CardTitle>
-            <CardDescription>
-              Select the features that apply to this property
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {commonFeatures.map((feature) => (
-                <div key={feature.id} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={feature.id}
-                    checked={selectedFeatures.includes(feature.label)}
-                    onCheckedChange={() => toggleFeature(feature.label)}
-                  />
-                  <label
-                    htmlFor={feature.id}
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    {feature.label}
-                  </label>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-6">
-              <FormField
-                control={form.control}
-                name="additionalNotes"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Additional Notes</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Add any additional details about the property"
-                        className="resize-none"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Include any special features or selling points not covered above
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Listing Style</CardTitle>
-            <CardDescription>
-              Choose how you want your listing to be written
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <FormField
-              control={form.control}
-              name="template"
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <TemplateSelector
-                      selectedTemplate={field.value}
-                      setSelectedTemplate={field.onChange}
-                      selectedStyle={form.getValues('style')}
-                      setSelectedStyle={(value) => form.setValue('style', value)}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </CardContent>
-        </Card>
-
-        <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? 'Generating...' : 'Generate Listing'}
-        </Button>
-      </form>
-    </Form>
+      <Button type="submit" className="w-full" disabled={isLoading}>
+        {isLoading ? 'Generating...' : 'Generate Listing'}
+      </Button>
+    </form>
   )
 } 

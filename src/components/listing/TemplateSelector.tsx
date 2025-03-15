@@ -1,8 +1,4 @@
 import React from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { Label } from '@/components/ui/label'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 export interface TemplateOption {
   id: string
@@ -80,7 +76,7 @@ const styles: StyleOption[] = [
     id: 'luxury',
     name: 'Luxury & High-End',
     description: 'Elegant, sophisticated, upscale language.',
-    example: 'A true masterpiece of modern elegance, this 6-bedroom estate features soaring ceilings, a chef's kitchen with Sub-Zero appliances, and breathtaking city views.'
+    example: 'A true masterpiece of modern elegance, this 6-bedroom estate features soaring ceilings, a chef\'s kitchen with Sub-Zero appliances, and breathtaking city views.'
   },
   {
     id: 'investor',
@@ -92,7 +88,7 @@ const styles: StyleOption[] = [
     id: 'casual',
     name: 'Casual & Friendly',
     description: 'Conversational, engaging, warm tone.',
-    example: 'Looking for a home that has it all? This cozy 3-bed, 2-bath gem is waiting for you! With a modern kitchen and huge backyard, it's perfect for families.'
+    example: 'Looking for a home that has it all? This cozy 3-bed, 2-bath gem is waiting for you! With a modern kitchen and huge backyard, it\'s perfect for families.'
   },
   {
     id: 'seo',
@@ -120,81 +116,93 @@ export function TemplateSelector({
   selectedStyle,
   setSelectedStyle
 }: TemplateSelectorProps) {
+  const [activeTab, setActiveTab] = React.useState<'templates' | 'styles'>('templates')
+
   return (
-    <Tabs defaultValue="templates" className="w-full">
-      <TabsList className="grid w-full grid-cols-2">
-        <TabsTrigger value="templates">Listing Templates</TabsTrigger>
-        <TabsTrigger value="styles">Writing Styles</TabsTrigger>
-      </TabsList>
+    <div className="w-full">
+      <div className="flex border-b mb-4">
+        <button
+          className={`px-4 py-2 ${activeTab === 'templates' ? 'border-b-2 border-primary font-medium' : 'text-muted-foreground'}`}
+          onClick={() => setActiveTab('templates')}
+        >
+          Listing Templates
+        </button>
+        <button
+          className={`px-4 py-2 ${activeTab === 'styles' ? 'border-b-2 border-primary font-medium' : 'text-muted-foreground'}`}
+          onClick={() => setActiveTab('styles')}
+        >
+          Writing Styles
+        </button>
+      </div>
       
-      <TabsContent value="templates">
-        <Card>
-          <CardHeader>
-            <CardTitle>Choose a Listing Template</CardTitle>
-            <CardDescription>
-              Select the template that best fits your property type
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <RadioGroup
-              value={selectedTemplate}
-              onValueChange={setSelectedTemplate}
-              className="grid grid-cols-1 md:grid-cols-2 gap-4"
-            >
-              {templates.map((template) => (
-                <div key={template.id} className="flex items-start space-x-2">
-                  <RadioGroupItem value={template.id} id={`template-${template.id}`} className="mt-1" />
-                  <div className="grid gap-1.5">
-                    <Label htmlFor={`template-${template.id}`} className="font-medium">
-                      {template.name}
-                    </Label>
+      {activeTab === 'templates' && (
+        <div className="border rounded-lg p-4">
+          <h3 className="text-lg font-medium mb-2">Choose a Listing Template</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Select the template that best fits your property type
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {templates.map((template) => (
+              <div key={template.id} className="flex items-start space-x-2">
+                <input
+                  type="radio"
+                  id={`template-${template.id}`}
+                  name="template"
+                  value={template.id}
+                  checked={selectedTemplate === template.id}
+                  onChange={() => setSelectedTemplate(template.id)}
+                  className="mt-1"
+                />
+                <div>
+                  <label htmlFor={`template-${template.id}`} className="font-medium">
+                    {template.name}
+                  </label>
+                  <p className="text-sm text-muted-foreground">
+                    {template.description}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      
+      {activeTab === 'styles' && (
+        <div className="border rounded-lg p-4">
+          <h3 className="text-lg font-medium mb-2">Choose a Writing Style</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Select the tone and style for your listing
+          </p>
+          <div className="space-y-4">
+            {styles.map((style) => (
+              <div key={style.id} className="flex flex-col space-y-2 border rounded-lg p-4">
+                <div className="flex items-start space-x-2">
+                  <input
+                    type="radio"
+                    id={`style-${style.id}`}
+                    name="style"
+                    value={style.id}
+                    checked={selectedStyle === style.id}
+                    onChange={() => setSelectedStyle(style.id)}
+                    className="mt-1"
+                  />
+                  <div>
+                    <label htmlFor={`style-${style.id}`} className="font-medium">
+                      {style.name}
+                    </label>
                     <p className="text-sm text-muted-foreground">
-                      {template.description}
+                      {style.description}
                     </p>
                   </div>
                 </div>
-              ))}
-            </RadioGroup>
-          </CardContent>
-        </Card>
-      </TabsContent>
-      
-      <TabsContent value="styles">
-        <Card>
-          <CardHeader>
-            <CardTitle>Choose a Writing Style</CardTitle>
-            <CardDescription>
-              Select the tone and style for your listing
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <RadioGroup
-              value={selectedStyle}
-              onValueChange={setSelectedStyle}
-              className="space-y-4"
-            >
-              {styles.map((style) => (
-                <div key={style.id} className="flex flex-col space-y-2 border rounded-lg p-4">
-                  <div className="flex items-start space-x-2">
-                    <RadioGroupItem value={style.id} id={`style-${style.id}`} className="mt-1" />
-                    <div className="grid gap-1.5">
-                      <Label htmlFor={`style-${style.id}`} className="font-medium">
-                        {style.name}
-                      </Label>
-                      <p className="text-sm text-muted-foreground">
-                        {style.description}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="ml-6 mt-2 text-sm italic bg-muted p-3 rounded">
-                    Example: "{style.example}"
-                  </div>
+                <div className="ml-6 mt-2 text-sm italic bg-muted p-3 rounded">
+                  Example: "{style.example}"
                 </div>
-              ))}
-            </RadioGroup>
-          </CardContent>
-        </Card>
-      </TabsContent>
-    </Tabs>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   )
 } 
