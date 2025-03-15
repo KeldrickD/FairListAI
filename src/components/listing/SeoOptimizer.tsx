@@ -1,7 +1,7 @@
 import React from 'react'
 import { Card } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 interface SeoMetric {
   name: string
@@ -22,6 +22,7 @@ interface SeoOptimizerProps {
   keywords: string[]
   title: string
   description: string
+  onOptimize?: (optimizedData: { title: string, description: string }) => void
 }
 
 export function SeoOptimizer({
@@ -29,6 +30,7 @@ export function SeoOptimizer({
   keywords,
   title,
   description,
+  onOptimize,
 }: SeoOptimizerProps) {
   const [activeTab, setActiveTab] = useState<'analysis' | 'keywords'>('analysis')
   const [showKeywordInsights, setShowKeywordInsights] = useState(false)
@@ -65,6 +67,15 @@ export function SeoOptimizer({
   const totalMaxScore = Array.isArray(metrics) ? metrics.reduce((sum, metric) => sum + (isNaN(metric.maxScore) ? 0 : metric.maxScore), 0) : 1; // Avoid division by zero
   const overallScorePercentage = totalMaxScore > 0 ? Math.round((totalScore / totalMaxScore) * 100) : 0;
   
+  // Debug logging
+  useEffect(() => {
+    console.log('SEO Metrics:', metrics);
+    console.log('Total Score:', totalScore);
+    console.log('Total Max Score:', totalMaxScore);
+    console.log('Overall Score Percentage:', overallScorePercentage);
+    console.log('Should show optimize button:', overallScorePercentage < 80 && !!onOptimize);
+  }, [metrics, totalScore, totalMaxScore, overallScorePercentage, onOptimize]);
+  
   const getScoreColor = (score: number, maxScore: number) => {
     if (isNaN(score) || isNaN(maxScore) || maxScore === 0) return 'text-gray-500';
     const percentage = (score / maxScore) * 100
@@ -93,6 +104,68 @@ export function SeoOptimizer({
     if (percentage >= 60) return 'bg-yellow-500'
     return 'bg-red-500'
   }
+
+  // Function to generate optimized title and description based on metrics
+  const generateOptimizedContent = () => {
+    if (!Array.isArray(metrics) || metrics.length === 0) return;
+
+    let optimizedTitle = title;
+    let optimizedDescription = description;
+    
+    // Find title-related metrics and apply suggestions
+    const titleMetric = metrics.find(m => m.name.toLowerCase().includes('title'));
+    if (titleMetric && titleMetric.score < titleMetric.maxScore && titleMetric.suggestions.length > 0) {
+      // Extract keywords for title optimization
+      const keywordsList = safeKeywords.length > 0 ? safeKeywords : [];
+      const primaryKeyword = keywordsList[0] || '';
+      const location = keywordsList.find(k => k.includes(',')) || '';
+      
+      // Create a more concise, keyword-rich title
+      if (primaryKeyword) {
+        if (title.length > 60) {
+          // Shorten title if too long
+          optimizedTitle = `${primaryKeyword} in ${location || 'Prime Location'}`;
+        } else if (!title.toLowerCase().includes(primaryKeyword.toLowerCase())) {
+          // Add primary keyword if missing
+          optimizedTitle = `${primaryKeyword} - ${title}`;
+        }
+      }
+    }
+    
+    // Find description-related metrics and apply suggestions
+    const descriptionMetric = metrics.find(m => m.name.toLowerCase().includes('description'));
+    if (descriptionMetric && descriptionMetric.score < descriptionMetric.maxScore && descriptionMetric.suggestions.length > 0) {
+      // Extract keywords for description optimization
+      const keywordsList = safeKeywords.length > 0 ? safeKeywords : [];
+      
+      // Improve description based on common issues
+      if (description.length > 160) {
+        // Shorten description if too long
+        optimizedDescription = description.substring(0, 157) + '...';
+      } else if (description.length < 120) {
+        // Expand description if too short
+        const missingKeywords = keywordsList.filter(k => !description.toLowerCase().includes(k.toLowerCase()));
+        if (missingKeywords.length > 0) {
+          optimizedDescription = `${description} Featuring ${missingKeywords.join(', ')}.`;
+        }
+      }
+      
+      // Ensure description has a call to action
+      if (!optimizedDescription.includes('call') && !optimizedDescription.includes('contact') && 
+          !optimizedDescription.includes('schedule') && !optimizedDescription.includes('tour')) {
+        optimizedDescription = `${optimizedDescription} Schedule a tour today!`;
+      }
+    }
+    
+    return { title: optimizedTitle, description: optimizedDescription };
+  };
+
+  const handleOptimize = () => {
+    const optimizedContent = generateOptimizedContent();
+    if (optimizedContent && onOptimize) {
+      onOptimize(optimizedContent);
+    }
+  };
 
   // If metrics is empty or invalid, show a placeholder
   if (!Array.isArray(metrics) || metrics.length === 0) {
@@ -131,6 +204,19 @@ export function SeoOptimizer({
           className="h-2" 
         />
       </div>
+
+      {/* Add Optimize button if onOptimize prop is provided */}
+      {onOptimize && (
+        <div className="mb-4 flex justify-end">
+          <button
+            onClick={handleOptimize}
+            className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2"
+          >
+            <span className="mr-1">✨</span>
+            Optimize for SEO
+          </button>
+        </div>
+      )}
 
       <div className="flex flex-col">
         <div className="flex space-x-2 mb-4 border-b">
