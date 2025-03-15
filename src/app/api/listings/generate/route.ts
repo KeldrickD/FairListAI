@@ -61,8 +61,26 @@ export async function POST(request: Request) {
     })
 
     // Parse social media response
-    const socialMediaText = socialMediaResponse.choices[0].message.content
-    const [instagram, facebook, tiktok] = socialMediaText.split('\n').filter(line => line.trim())
+    const socialMediaText = socialMediaResponse.choices[0]?.message?.content || ''
+    let instagram = '', facebook = '', tiktok = ''
+    
+    // More robust parsing of social media captions
+    const lines = socialMediaText.split('\n').map(line => line.trim()).filter(Boolean)
+    for (const line of lines) {
+      if (line.toLowerCase().includes('instagram:')) {
+        instagram = line.substring(line.indexOf(':') + 1).trim()
+      } else if (line.toLowerCase().includes('facebook:')) {
+        facebook = line.substring(line.indexOf(':') + 1).trim()
+      } else if (line.toLowerCase().includes('tiktok:')) {
+        tiktok = line.substring(line.indexOf(':') + 1).trim()
+      }
+    }
+
+    // If any caption is missing, use the first available caption
+    const defaultCaption = instagram || facebook || tiktok || 'Check out this amazing property! ✨'
+    instagram = instagram || defaultCaption
+    facebook = facebook || defaultCaption
+    tiktok = tiktok || defaultCaption
 
     // Generate relevant hashtags
     const hashtagPrompt = `Generate 10 relevant real estate hashtags for a ${data.propertyType} in ${data.location}. 
@@ -84,10 +102,10 @@ export async function POST(request: Request) {
       max_tokens: 100,
     })
 
-    const hashtags = hashtagResponse.choices[0].message.content
-      .split('\n')
+    const hashtags = hashtagResponse.choices[0]?.message?.content
+      ?.split('\n')
       .filter(line => line.trim())
-      .map(tag => tag.startsWith('#') ? tag : `#${tag}`)
+      .map(tag => tag.startsWith('#') ? tag : `#${tag}`) || []
 
     return NextResponse.json({
       success: true,
