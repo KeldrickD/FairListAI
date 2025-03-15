@@ -1,3 +1,4 @@
+import * as React from "react"
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -13,6 +14,8 @@ interface ListingPreviewProps {
       tiktok: string
     }
     hashtags: string[]
+    seoOptimized?: boolean
+    seoTitle?: string
   }
   onEdit: () => void
   onCopy: (text: string) => void
@@ -25,7 +28,10 @@ export function ListingPreview({
   onEdit,
   onCopy,
   onDownload,
-}: ListingPreviewProps) {
+}: ListingPreviewProps): React.JSX.Element {
+  // Generate a default title if no SEO title is provided
+  const listingTitle = `${propertyData.bedrooms} Bed, ${propertyData.bathrooms} Bath ${propertyData.propertyType} in ${propertyData.location}`;
+  
   return (
     <Card className="p-6">
       <div className="flex justify-between items-center mb-6">
@@ -38,6 +44,33 @@ export function ListingPreview({
             Download
           </Button>
         </div>
+      </div>
+
+      {/* Display SEO optimized badge if listing is optimized */}
+      {generatedListing.seoOptimized && (
+        <div className="mb-4 flex items-center">
+          <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full flex items-center">
+            <span className="mr-1">✨</span>
+            SEO Optimized
+          </span>
+        </div>
+      )}
+
+      {/* Display title */}
+      <div className="mb-4">
+        <h3 className="font-semibold mb-2">Title</h3>
+        <p className="text-lg font-medium">
+          {generatedListing.seoOptimized && generatedListing.seoTitle ? generatedListing.seoTitle : listingTitle}
+        </p>
+        {generatedListing.seoOptimized && generatedListing.seoTitle && (
+          <Button
+            variant="ghost"
+            onClick={() => onCopy(generatedListing.seoTitle || '')}
+            className="mt-2 h-8 px-2 text-xs"
+          >
+            Copy Title
+          </Button>
+        )}
       </div>
 
       <Tabs defaultValue="description" className="w-full">
