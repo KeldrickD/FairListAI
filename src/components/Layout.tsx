@@ -16,7 +16,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="flex justify-between h-16 items-center">
             <div className="flex items-center">
               <Link href="/" className="flex-shrink-0 flex items-center">
-                <span className="text-2xl font-bold text-indigo-600">FairListAI</span>
+                <span className="text-2xl font-bold text-indigo-600">Listing Genie</span>
               </Link>
             </div>
             
@@ -159,7 +159,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="container mx-auto px-4 py-8">
           <div className="flex flex-col items-center md:flex-row md:justify-between">
             <div className="text-center md:text-left mb-4 md:mb-0">
-              <p className="text-gray-500">© 2023 FairListAI. All rights reserved.</p>
+              <p className="text-gray-500">© {new Date().getFullYear()} Listing Genie. All rights reserved.</p>
             </div>
             <div className="flex space-x-6">
               <a href="#" className="text-gray-500 hover:text-indigo-600">

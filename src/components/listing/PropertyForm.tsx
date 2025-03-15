@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
 
 interface PropertyFormProps {
   onSubmit: (data: PropertyData) => void
@@ -18,7 +19,16 @@ export interface PropertyData {
   features: string[]
   location: string
   price: number
+  yearBuilt?: number
+  lotSize?: string
+  neighborhood?: string
+  schools?: string
+  stylePreference?: string
+  targetAudience?: string
   additionalNotes: string
+  includeFairHousingCompliance: boolean
+  includeSeoOptimization: boolean
+  includeSocialMedia: boolean
 }
 
 export function PropertyForm({ onSubmit, isLoading = false }: PropertyFormProps) {
@@ -30,7 +40,16 @@ export function PropertyForm({ onSubmit, isLoading = false }: PropertyFormProps)
     features: [],
     location: '',
     price: 0,
+    yearBuilt: undefined,
+    lotSize: '',
+    neighborhood: '',
+    schools: '',
+    stylePreference: 'professional',
+    targetAudience: '',
     additionalNotes: '',
+    includeFairHousingCompliance: true,
+    includeSeoOptimization: true,
+    includeSocialMedia: true,
   })
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -99,6 +118,8 @@ export function PropertyForm({ onSubmit, isLoading = false }: PropertyFormProps)
               <SelectItem value="condo">Condo</SelectItem>
               <SelectItem value="townhouse">Townhouse</SelectItem>
               <SelectItem value="apartment">Apartment</SelectItem>
+              <SelectItem value="land">Land</SelectItem>
+              <SelectItem value="commercial">Commercial</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -123,10 +144,56 @@ export function PropertyForm({ onSubmit, isLoading = false }: PropertyFormProps)
             required
           />
         </div>
+        <div className="space-y-2">
+          <Label htmlFor="yearBuilt">Year Built</Label>
+          <Input
+            id="yearBuilt"
+            type="number"
+            min="1800"
+            max={new Date().getFullYear()}
+            value={formData.yearBuilt || ''}
+            onChange={(e) => setFormData(prev => ({ 
+              ...prev, 
+              yearBuilt: e.target.value ? parseInt(e.target.value) : undefined 
+            }))}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="lotSize">Lot Size</Label>
+          <Input
+            id="lotSize"
+            type="text"
+            placeholder="e.g., 0.25 acres"
+            value={formData.lotSize || ''}
+            onChange={(e) => setFormData(prev => ({ ...prev, lotSize: e.target.value }))}
+          />
+        </div>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="features">Features</Label>
+        <Label htmlFor="neighborhood">Neighborhood/Area</Label>
+        <Input
+          id="neighborhood"
+          type="text"
+          placeholder="e.g., Downtown, Westside, etc."
+          value={formData.neighborhood || ''}
+          onChange={(e) => setFormData(prev => ({ ...prev, neighborhood: e.target.value }))}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="schools">Nearby Schools</Label>
+        <Input
+          id="schools"
+          type="text"
+          placeholder="e.g., Lincoln Elementary, Washington High School"
+          value={formData.schools || ''}
+          onChange={(e) => setFormData(prev => ({ ...prev, schools: e.target.value }))}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="features">Key Features</Label>
         <div className="flex gap-2">
           <Input
             id="features"
@@ -177,6 +244,36 @@ export function PropertyForm({ onSubmit, isLoading = false }: PropertyFormProps)
       </div>
 
       <div className="space-y-2">
+        <Label htmlFor="stylePreference">Writing Style</Label>
+        <Select
+          value={formData.stylePreference}
+          onValueChange={(value) => setFormData(prev => ({ ...prev, stylePreference: value }))}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select writing style" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="professional">Professional</SelectItem>
+            <SelectItem value="casual">Casual & Friendly</SelectItem>
+            <SelectItem value="luxury">Luxury & Upscale</SelectItem>
+            <SelectItem value="minimalist">Concise & Minimal</SelectItem>
+            <SelectItem value="enthusiastic">Enthusiastic & Engaging</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="targetAudience">Target Audience</Label>
+        <Input
+          id="targetAudience"
+          type="text"
+          placeholder="e.g., First-time buyers, Investors, Luxury buyers"
+          value={formData.targetAudience || ''}
+          onChange={(e) => setFormData(prev => ({ ...prev, targetAudience: e.target.value }))}
+        />
+      </div>
+
+      <div className="space-y-2">
         <Label htmlFor="additionalNotes">Additional Notes</Label>
         <Textarea
           id="additionalNotes"
@@ -185,6 +282,57 @@ export function PropertyForm({ onSubmit, isLoading = false }: PropertyFormProps)
           placeholder="Any additional details about the property..."
           className="min-h-[100px]"
         />
+      </div>
+
+      <div className="space-y-4 border-t pt-4">
+        <h3 className="font-medium">Generation Options</h3>
+        <div className="flex items-center space-x-2">
+          <Checkbox 
+            id="fairHousing" 
+            checked={formData.includeFairHousingCompliance}
+            onCheckedChange={(checked) => 
+              setFormData(prev => ({ 
+                ...prev, 
+                includeFairHousingCompliance: checked === true 
+              }))
+            }
+          />
+          <Label htmlFor="fairHousing" className="font-normal">
+            Fair Housing Compliance Check
+          </Label>
+        </div>
+        
+        <div className="flex items-center space-x-2">
+          <Checkbox 
+            id="seo" 
+            checked={formData.includeSeoOptimization}
+            onCheckedChange={(checked) => 
+              setFormData(prev => ({ 
+                ...prev, 
+                includeSeoOptimization: checked === true 
+              }))
+            }
+          />
+          <Label htmlFor="seo" className="font-normal">
+            SEO Optimization
+          </Label>
+        </div>
+        
+        <div className="flex items-center space-x-2">
+          <Checkbox 
+            id="social" 
+            checked={formData.includeSocialMedia}
+            onCheckedChange={(checked) => 
+              setFormData(prev => ({ 
+                ...prev, 
+                includeSocialMedia: checked === true 
+              }))
+            }
+          />
+          <Label htmlFor="social" className="font-normal">
+            Generate Social Media Captions
+          </Label>
+        </div>
       </div>
 
       <Button type="submit" className="w-full" disabled={isLoading}>

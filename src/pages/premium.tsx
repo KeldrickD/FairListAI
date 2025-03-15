@@ -15,52 +15,72 @@ interface PricingTier {
 export default function Premium() {
   const pricingTiers: PricingTier[] = [
     {
-      name: 'Free',
-      price: '$0',
-      description: 'Basic features for individual agents',
+      name: 'Pay-Per-Use',
+      price: '$5',
+      description: 'Perfect for occasional users',
       features: [
-        '5 listings per month',
-        'Basic compliance checking',
-        'Standard SEO optimization',
-        'Social media captions',
-        'PDF downloads',
+        'Single listing generation',
+        'Fair Housing compliance filter',
+        'Basic SEO optimization',
+        'Social media caption for one platform',
+        'Valid for 30 days',
+        'PDF download',
       ],
-      buttonText: 'Get Started',
-      buttonLink: '/register',
+      buttonText: 'Buy One Listing',
+      buttonLink: '/checkout?plan=single',
     },
     {
-      name: 'Pro',
+      name: 'Basic Plan',
       price: '$29',
-      description: 'Advanced features for serious agents',
+      description: 'Best value for individual agents',
       features: [
-        'Unlimited listings',
-        'Advanced compliance checking',
-        'Enhanced SEO optimization',
-        'Social media captions with analytics',
+        '10 listings per month',
+        'Fair Housing compliance filter',
+        'Advanced SEO optimization',
+        'Social media captions',
+        'Hashtag suggestions',
         'PDF and Word downloads',
-        'Email marketing templates',
-        'Priority support',
+        'Email support',
       ],
-      buttonText: 'Upgrade to Pro',
-      buttonLink: '/checkout?plan=pro',
+      buttonText: 'Subscribe Now',
+      buttonLink: '/checkout?plan=basic',
       highlighted: true,
     },
     {
-      name: 'Team',
+      name: 'Pro Plan',
       price: '$99',
-      description: 'For real estate teams and brokerages',
+      description: 'For serious real estate professionals',
       features: [
-        'Everything in Pro',
-        'Up to 10 team members',
-        'Team dashboard',
-        'Listing approval workflow',
-        'Brand voice customization',
-        'White-label PDFs',
-        'API access',
+        '50 listings per month',
+        'Fair Housing compliance filter',
+        'Advanced SEO optimization',
+        'Social media captions for all platforms',
+        'Custom hashtag recommendations',
+        'All export formats',
+        'Priority support',
+        'Listing analytics',
+      ],
+      buttonText: 'Go Pro',
+      buttonLink: '/checkout?plan=pro',
+    },
+    {
+      name: 'Enterprise Plan',
+      price: '$499',
+      description: 'For brokerages and real estate teams',
+      features: [
+        'Unlimited listings',
+        'Fair Housing compliance filter',
+        'Advanced SEO optimization',
+        'Social media captions for all platforms',
+        'Custom hashtag recommendations',
+        'All export formats',
+        'API integration for MLS platforms',
+        'Bulk listing generation',
         'Dedicated account manager',
+        'Custom branding options',
       ],
       buttonText: 'Contact Sales',
-      buttonLink: '/contact',
+      buttonLink: '/contact?plan=enterprise',
     },
   ];
 
@@ -69,11 +89,11 @@ export default function Premium() {
       <div className="text-center mb-16">
         <h1 className="text-4xl font-bold mb-4">Premium Features</h1>
         <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-          Upgrade your account to access advanced features and create even better property listings.
+          Power up your real estate listings with AI-generated, Fair Housing compliant, and SEO-optimized descriptions.
         </p>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
         {pricingTiers.map((tier) => (
           <div 
             key={tier.name}
@@ -87,11 +107,15 @@ export default function Premium() {
               <h3 className="text-2xl font-bold">{tier.name}</h3>
               <p className="mt-4 flex items-baseline">
                 <span className="text-4xl font-extrabold">{tier.price}</span>
-                {tier.name !== 'Free' && <span className="ml-1 text-gray-500">/month</span>}
+                {tier.name === 'Pay-Per-Use' ? (
+                  <span className="ml-1 text-gray-500">/listing</span>
+                ) : (
+                  <span className="ml-1 text-gray-500">/month</span>
+                )}
               </p>
               <p className="mt-2 text-gray-600">{tier.description}</p>
             </div>
-            <div className="px-6 pt-6 pb-8 bg-white">
+            <div className="px-6 pt-6 pb-8 bg-white h-full">
               <ul className="space-y-4">
                 {tier.features.map((feature) => (
                   <li key={feature} className="flex items-start">
@@ -121,27 +145,27 @@ export default function Premium() {
         <h2 className="text-2xl font-bold mb-6">Frequently Asked Questions</h2>
         <div className="space-y-6">
           <div>
-            <h3 className="text-lg font-medium mb-2">Can I upgrade or downgrade at any time?</h3>
+            <h3 className="text-lg font-medium mb-2">What happens when I reach my monthly listing limit?</h3>
             <p className="text-gray-600">
-              Yes, you can upgrade, downgrade, or cancel your subscription at any time. Changes to your subscription will take effect at the start of your next billing cycle.
+              You can upgrade your plan at any time or purchase additional listings at $5 each. Your existing listings will remain accessible even if you reach your limit.
             </p>
           </div>
           <div>
-            <h3 className="text-lg font-medium mb-2">How does the team plan work?</h3>
+            <h3 className="text-lg font-medium mb-2">Is there a fair housing compliance guarantee?</h3>
             <p className="text-gray-600">
-              The team plan allows up to 10 team members to access the platform under a single account. The team admin can manage permissions, view all listings, and track team performance.
+              While our AI is extensively trained to comply with Fair Housing laws, we recommend always reviewing generated content. We provide compliance warnings but ultimate responsibility rests with the agent posting the listing.
             </p>
           </div>
           <div>
-            <h3 className="text-lg font-medium mb-2">Do you offer a free trial of premium features?</h3>
+            <h3 className="text-lg font-medium mb-2">Do you offer discounts for annual subscriptions?</h3>
             <p className="text-gray-600">
-              Yes, we offer a 14-day free trial of our Pro plan. No credit card required. You can try all the premium features and decide if it's right for you.
+              Yes! Save 20% when you pay annually for any of our subscription plans. Contact our sales team for custom enterprise pricing.
             </p>
           </div>
           <div>
-            <h3 className="text-lg font-medium mb-2">What payment methods do you accept?</h3>
+            <h3 className="text-lg font-medium mb-2">How does the API integration work?</h3>
             <p className="text-gray-600">
-              We accept all major credit cards, PayPal, and bank transfers for annual plans. All payments are processed securely through Stripe.
+              Enterprise subscribers receive API access to integrate with MLS platforms, CRMs, and other real estate software. Our documentation provides implementation guides and our team offers integration support.
             </p>
           </div>
         </div>
