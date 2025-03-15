@@ -1,343 +1,306 @@
 import { useState } from 'react'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useForm } from 'react-hook-form'
+import * as z from 'zod'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
-
-interface PropertyFormProps {
-  onSubmit: (data: PropertyData) => void
-  isLoading?: boolean
-}
+import { Separator } from '@/components/ui/separator'
+import { TemplateSelector } from './TemplateSelector'
 
 export interface PropertyData {
+  propertyType: string
   bedrooms: number
   bathrooms: number
   squareFeet: number
-  propertyType: string
-  features: string[]
-  location: string
   price: number
-  yearBuilt?: number
-  lotSize?: string
-  neighborhood?: string
-  schools?: string
-  stylePreference?: string
-  targetAudience?: string
+  location: string
+  features: string[]
   additionalNotes: string
-  includeFairHousingCompliance: boolean
-  includeSeoOptimization: boolean
-  includeSocialMedia: boolean
+  template: string
+  style: string
 }
 
-export function PropertyForm({ onSubmit, isLoading = false }: PropertyFormProps) {
-  const [formData, setFormData] = useState<PropertyData>({
-    bedrooms: 0,
-    bathrooms: 0,
-    squareFeet: 0,
-    propertyType: '',
-    features: [],
-    location: '',
-    price: 0,
-    yearBuilt: undefined,
-    lotSize: '',
-    neighborhood: '',
-    schools: '',
-    stylePreference: 'professional',
-    targetAudience: '',
-    additionalNotes: '',
-    includeFairHousingCompliance: true,
-    includeSeoOptimization: true,
-    includeSocialMedia: true,
+interface PropertyFormProps {
+  onSubmit: (data: PropertyData) => void
+  isLoading: boolean
+}
+
+const propertyTypes = [
+  { value: 'single-family', label: 'Single-Family Home' },
+  { value: 'condo', label: 'Condo/Apartment' },
+  { value: 'townhouse', label: 'Townhouse' },
+  { value: 'multi-family', label: 'Multi-Family' },
+  { value: 'land', label: 'Land/Lot' },
+  { value: 'commercial', label: 'Commercial Property' },
+]
+
+const commonFeatures = [
+  { id: 'updated-kitchen', label: 'Updated Kitchen' },
+  { id: 'hardwood-floors', label: 'Hardwood Floors' },
+  { id: 'open-floor-plan', label: 'Open Floor Plan' },
+  { id: 'large-backyard', label: 'Large Backyard' },
+  { id: 'pool', label: 'Swimming Pool' },
+  { id: 'garage', label: 'Garage' },
+  { id: 'central-ac', label: 'Central A/C' },
+  { id: 'fireplace', label: 'Fireplace' },
+  { id: 'walk-in-closets', label: 'Walk-in Closets' },
+  { id: 'smart-home', label: 'Smart Home Features' },
+  { id: 'energy-efficient', label: 'Energy Efficient' },
+  { id: 'waterfront', label: 'Waterfront' },
+]
+
+const formSchema = z.object({
+  propertyType: z.string().min(1, { message: 'Please select a property type' }),
+  bedrooms: z.coerce.number().min(0, { message: 'Bedrooms must be 0 or more' }),
+  bathrooms: z.coerce.number().min(0, { message: 'Bathrooms must be 0 or more' }),
+  squareFeet: z.coerce.number().min(1, { message: 'Square footage is required' }),
+  price: z.coerce.number().min(1, { message: 'Price is required' }),
+  location: z.string().min(1, { message: 'Location is required' }),
+  features: z.array(z.string()).optional(),
+  additionalNotes: z.string().optional(),
+  template: z.string().default('standard'),
+  style: z.string().default('professional')
+})
+
+export function PropertyForm({ onSubmit, isLoading }: PropertyFormProps) {
+  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([])
+  
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      propertyType: '',
+      bedrooms: 3,
+      bathrooms: 2,
+      squareFeet: 1500,
+      price: 350000,
+      location: '',
+      features: [],
+      additionalNotes: '',
+      template: 'standard',
+      style: 'professional'
+    },
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    onSubmit(formData)
+  function handleSubmit(values: z.infer<typeof formSchema>) {
+    onSubmit({
+      ...values,
+      features: selectedFeatures,
+    })
   }
 
-  const handleFeatureAdd = (feature: string) => {
-    if (feature.trim()) {
-      setFormData(prev => ({
-        ...prev,
-        features: [...prev.features, feature.trim()]
-      }))
-    }
+  const toggleFeature = (feature: string) => {
+    setSelectedFeatures(prev => 
+      prev.includes(feature)
+        ? prev.filter(f => f !== feature)
+        : [...prev, feature]
+    )
+    
+    form.setValue('features', selectedFeatures.includes(feature)
+      ? selectedFeatures.filter(f => f !== feature)
+      : [...selectedFeatures, feature]
+    )
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="bedrooms">Bedrooms</Label>
-          <Input
-            id="bedrooms"
-            type="number"
-            min="0"
-            value={formData.bedrooms}
-            onChange={(e) => setFormData(prev => ({ ...prev, bedrooms: parseInt(e.target.value) }))}
-            required
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="bathrooms">Bathrooms</Label>
-          <Input
-            id="bathrooms"
-            type="number"
-            min="0"
-            step="0.5"
-            value={formData.bathrooms}
-            onChange={(e) => setFormData(prev => ({ ...prev, bathrooms: parseFloat(e.target.value) }))}
-            required
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="squareFeet">Square Feet</Label>
-          <Input
-            id="squareFeet"
-            type="number"
-            min="0"
-            value={formData.squareFeet}
-            onChange={(e) => setFormData(prev => ({ ...prev, squareFeet: parseInt(e.target.value) }))}
-            required
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="propertyType">Property Type</Label>
-          <Select
-            value={formData.propertyType}
-            onValueChange={(value) => setFormData(prev => ({ ...prev, propertyType: value }))}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select property type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="single-family">Single Family</SelectItem>
-              <SelectItem value="multi-family">Multi Family</SelectItem>
-              <SelectItem value="condo">Condo</SelectItem>
-              <SelectItem value="townhouse">Townhouse</SelectItem>
-              <SelectItem value="apartment">Apartment</SelectItem>
-              <SelectItem value="land">Land</SelectItem>
-              <SelectItem value="commercial">Commercial</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="location">Location</Label>
-          <Input
-            id="location"
-            type="text"
-            value={formData.location}
-            onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-            required
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="price">Price</Label>
-          <Input
-            id="price"
-            type="number"
-            min="0"
-            value={formData.price}
-            onChange={(e) => setFormData(prev => ({ ...prev, price: parseInt(e.target.value) }))}
-            required
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="yearBuilt">Year Built</Label>
-          <Input
-            id="yearBuilt"
-            type="number"
-            min="1800"
-            max={new Date().getFullYear()}
-            value={formData.yearBuilt || ''}
-            onChange={(e) => setFormData(prev => ({ 
-              ...prev, 
-              yearBuilt: e.target.value ? parseInt(e.target.value) : undefined 
-            }))}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="lotSize">Lot Size</Label>
-          <Input
-            id="lotSize"
-            type="text"
-            placeholder="e.g., 0.25 acres"
-            value={formData.lotSize || ''}
-            onChange={(e) => setFormData(prev => ({ ...prev, lotSize: e.target.value }))}
-          />
-        </div>
-      </div>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Property Details</CardTitle>
+            <CardDescription>
+              Enter the basic information about the property
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <FormField
+              control={form.control}
+              name="propertyType"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Property Type</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select property type" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {propertyTypes.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-      <div className="space-y-2">
-        <Label htmlFor="neighborhood">Neighborhood/Area</Label>
-        <Input
-          id="neighborhood"
-          type="text"
-          placeholder="e.g., Downtown, Westside, etc."
-          value={formData.neighborhood || ''}
-          onChange={(e) => setFormData(prev => ({ ...prev, neighborhood: e.target.value }))}
-        />
-      </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="bedrooms"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Bedrooms</FormLabel>
+                    <FormControl>
+                      <Input type="number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-      <div className="space-y-2">
-        <Label htmlFor="schools">Nearby Schools</Label>
-        <Input
-          id="schools"
-          type="text"
-          placeholder="e.g., Lincoln Elementary, Washington High School"
-          value={formData.schools || ''}
-          onChange={(e) => setFormData(prev => ({ ...prev, schools: e.target.value }))}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="features">Key Features</Label>
-        <div className="flex gap-2">
-          <Input
-            id="features"
-            type="text"
-            placeholder="Add a feature (e.g., 'Modern Kitchen')"
-            onKeyPress={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault()
-                handleFeatureAdd((e.target as HTMLInputElement).value)
-                ;(e.target as HTMLInputElement).value = ''
-              }
-            }}
-          />
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              const input = document.getElementById('features') as HTMLInputElement
-              handleFeatureAdd(input.value)
-              input.value = ''
-            }}
-          >
-            Add
-          </Button>
-        </div>
-        <div className="flex flex-wrap gap-2 mt-2">
-          {formData.features.map((feature, index) => (
-            <div
-              key={index}
-              className="bg-secondary px-2 py-1 rounded-md flex items-center gap-1"
-            >
-              <span>{feature}</span>
-              <button
-                type="button"
-                onClick={() => {
-                  setFormData(prev => ({
-                    ...prev,
-                    features: prev.features.filter((_, i) => i !== index)
-                  }))
-                }}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                ×
-              </button>
+              <FormField
+                control={form.control}
+                name="bathrooms"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Bathrooms</FormLabel>
+                    <FormControl>
+                      <Input type="number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
-          ))}
-        </div>
-      </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="stylePreference">Writing Style</Label>
-        <Select
-          value={formData.stylePreference}
-          onValueChange={(value) => setFormData(prev => ({ ...prev, stylePreference: value }))}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select writing style" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="professional">Professional</SelectItem>
-            <SelectItem value="casual">Casual & Friendly</SelectItem>
-            <SelectItem value="luxury">Luxury & Upscale</SelectItem>
-            <SelectItem value="minimalist">Concise & Minimal</SelectItem>
-            <SelectItem value="enthusiastic">Enthusiastic & Engaging</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="squareFeet"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Square Feet</FormLabel>
+                    <FormControl>
+                      <Input type="number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-      <div className="space-y-2">
-        <Label htmlFor="targetAudience">Target Audience</Label>
-        <Input
-          id="targetAudience"
-          type="text"
-          placeholder="e.g., First-time buyers, Investors, Luxury buyers"
-          value={formData.targetAudience || ''}
-          onChange={(e) => setFormData(prev => ({ ...prev, targetAudience: e.target.value }))}
-        />
-      </div>
+              <FormField
+                control={form.control}
+                name="price"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Price ($)</FormLabel>
+                    <FormControl>
+                      <Input type="number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="additionalNotes">Additional Notes</Label>
-        <Textarea
-          id="additionalNotes"
-          value={formData.additionalNotes}
-          onChange={(e) => setFormData(prev => ({ ...prev, additionalNotes: e.target.value }))}
-          placeholder="Any additional details about the property..."
-          className="min-h-[100px]"
-        />
-      </div>
+            <FormField
+              control={form.control}
+              name="location"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Location</FormLabel>
+                  <FormControl>
+                    <Input placeholder="City, State" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </CardContent>
+        </Card>
 
-      <div className="space-y-4 border-t pt-4">
-        <h3 className="font-medium">Generation Options</h3>
-        <div className="flex items-center space-x-2">
-          <Checkbox 
-            id="fairHousing" 
-            checked={formData.includeFairHousingCompliance}
-            onCheckedChange={(checked) => 
-              setFormData(prev => ({ 
-                ...prev, 
-                includeFairHousingCompliance: checked === true 
-              }))
-            }
-          />
-          <Label htmlFor="fairHousing" className="font-normal">
-            Fair Housing Compliance Check
-          </Label>
-        </div>
-        
-        <div className="flex items-center space-x-2">
-          <Checkbox 
-            id="seo" 
-            checked={formData.includeSeoOptimization}
-            onCheckedChange={(checked) => 
-              setFormData(prev => ({ 
-                ...prev, 
-                includeSeoOptimization: checked === true 
-              }))
-            }
-          />
-          <Label htmlFor="seo" className="font-normal">
-            SEO Optimization
-          </Label>
-        </div>
-        
-        <div className="flex items-center space-x-2">
-          <Checkbox 
-            id="social" 
-            checked={formData.includeSocialMedia}
-            onCheckedChange={(checked) => 
-              setFormData(prev => ({ 
-                ...prev, 
-                includeSocialMedia: checked === true 
-              }))
-            }
-          />
-          <Label htmlFor="social" className="font-normal">
-            Generate Social Media Captions
-          </Label>
-        </div>
-      </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Features & Amenities</CardTitle>
+            <CardDescription>
+              Select the features that apply to this property
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {commonFeatures.map((feature) => (
+                <div key={feature.id} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={feature.id}
+                    checked={selectedFeatures.includes(feature.label)}
+                    onCheckedChange={() => toggleFeature(feature.label)}
+                  />
+                  <label
+                    htmlFor={feature.id}
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    {feature.label}
+                  </label>
+                </div>
+              ))}
+            </div>
 
-      <Button type="submit" className="w-full" disabled={isLoading}>
-        {isLoading ? 'Generating...' : 'Generate Listing'}
-      </Button>
-    </form>
+            <div className="mt-6">
+              <FormField
+                control={form.control}
+                name="additionalNotes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Additional Notes</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Add any additional details about the property"
+                        className="resize-none"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Include any special features or selling points not covered above
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Listing Style</CardTitle>
+            <CardDescription>
+              Choose how you want your listing to be written
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <FormField
+              control={form.control}
+              name="template"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <TemplateSelector
+                      selectedTemplate={field.value}
+                      setSelectedTemplate={field.onChange}
+                      selectedStyle={form.getValues('style')}
+                      setSelectedStyle={(value) => form.setValue('style', value)}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </CardContent>
+        </Card>
+
+        <Button type="submit" className="w-full" disabled={isLoading}>
+          {isLoading ? 'Generating...' : 'Generate Listing'}
+        </Button>
+      </form>
+    </Form>
   )
 } 

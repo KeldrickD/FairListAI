@@ -17,6 +17,28 @@ export async function POST(request: Request) {
     Price: $${data.price.toLocaleString()}. 
     Additional notes: ${data.additionalNotes}.
     
+    Template: ${data.template || 'standard'}
+    Writing Style: ${data.style || 'professional'}
+    
+    TEMPLATE GUIDELINES:
+    - Standard Listing (200-300 words): Perfect for Zillow, Realtor.com, and Redfin-style descriptions.
+    - Short Listing (100-150 words): Ideal for social media captions, MLS listings, and quick property overviews.
+    - Luxury Home (300-350 words): For high-end properties with premium features and amenities.
+    - Investment Property: Focuses on ROI, rental income, and investment potential.
+    - New Construction: Highlights builder features, warranties, and modern amenities.
+    - 55+ Community: Emphasizes lifestyle, amenities, and low-maintenance living.
+    - Vacation Rental: Perfect for short-term rentals, highlighting getaway features.
+    - Fixer-Upper/Foreclosure: Focuses on potential, investment opportunity, and value.
+    
+    WRITING STYLE GUIDELINES:
+    - Standard Professional: Clear, concise, informative, and engaging.
+    - Luxury & High-End: Elegant, sophisticated, upscale language.
+    - Investor-Friendly: Direct, ROI-focused, clear financial value.
+    - Casual & Friendly: Conversational, engaging, warm tone.
+    - SEO-Optimized: Keyword-rich, designed for ranking in searches.
+    - Storytelling / Lifestyle: Emotional, immersive, paints a picture.
+    - Social Media Style: Short, punchy, high-energy, with emojis.
+    
     The listing should be professional, highlight the property's best features, and be optimized for real estate websites.`
 
     const descriptionResponse = await openai.chat.completions.create({
@@ -24,7 +46,7 @@ export async function POST(request: Request) {
       messages: [
         {
           role: "system",
-          content: "You are a professional real estate copywriter who creates engaging property listings."
+          content: "You are a professional real estate copywriter who creates engaging property listings. You adapt your writing style and format based on the specified template and style guidelines."
         },
         {
           role: "user",
@@ -40,6 +62,17 @@ export async function POST(request: Request) {
 
     Property: ${descriptionResponse.choices[0].message.content}
     
+    Writing Style: ${data.style || 'professional'}
+    
+    WRITING STYLE GUIDELINES:
+    - Standard Professional: Clear, concise, informative, and engaging.
+    - Luxury & High-End: Elegant, sophisticated, upscale language.
+    - Investor-Friendly: Direct, ROI-focused, clear financial value.
+    - Casual & Friendly: Conversational, engaging, warm tone.
+    - SEO-Optimized: Keyword-rich, designed for ranking in searches.
+    - Storytelling / Lifestyle: Emotional, immersive, paints a picture.
+    - Social Media Style: Short, punchy, high-energy, with emojis.
+    
     Format your response exactly like this (keep the labels):
     Instagram: [Short caption with emojis - max 150 chars]
     Facebook: [Engaging caption with key features - max 150 chars]
@@ -50,7 +83,7 @@ export async function POST(request: Request) {
       messages: [
         {
           role: "system",
-          content: "You are a social media expert who creates concise, engaging real estate content. Keep all captions under 150 characters."
+          content: "You are a social media expert who creates concise, engaging real estate content. Keep all captions under 150 characters and adapt your tone to match the specified writing style."
         },
         {
           role: "user",
