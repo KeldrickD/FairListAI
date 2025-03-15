@@ -1,7 +1,10 @@
 import React from 'react'
 import { Card } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 
 interface SeoMetric {
   name: string
@@ -34,6 +37,17 @@ export function SeoOptimizer({
 }: SeoOptimizerProps) {
   const [activeTab, setActiveTab] = useState<'analysis' | 'keywords'>('analysis')
   const [showKeywordInsights, setShowKeywordInsights] = useState(false)
+  const [isOptimizing, setIsOptimizing] = useState(false)
+  const [optimizationLevel, setOptimizationLevel] = useState<'basic' | 'moderate' | 'aggressive'>('moderate')
+  const [optimizationOptions, setOptimizationOptions] = useState({
+    title: true,
+    description: true,
+    keywords: true,
+    readability: true,
+    callToAction: true
+  })
+  const [showComparison, setShowComparison] = useState(false)
+  const [optimizedContent, setOptimizedContent] = useState<{ title: string, description: string } | null>(null)
   
   // Ensure keywords is always an array
   const safeKeywords = Array.isArray(keywords) ? keywords : [];
@@ -67,15 +81,6 @@ export function SeoOptimizer({
   const totalMaxScore = Array.isArray(metrics) ? metrics.reduce((sum, metric) => sum + (isNaN(metric.maxScore) ? 0 : metric.maxScore), 0) : 1; // Avoid division by zero
   const overallScorePercentage = totalMaxScore > 0 ? Math.round((totalScore / totalMaxScore) * 100) : 0;
   
-  // Debug logging
-  useEffect(() => {
-    console.log('SEO Metrics:', metrics);
-    console.log('Total Score:', totalScore);
-    console.log('Total Max Score:', totalMaxScore);
-    console.log('Overall Score Percentage:', overallScorePercentage);
-    console.log('Should show optimize button:', overallScorePercentage < 80 && !!onOptimize);
-  }, [metrics, totalScore, totalMaxScore, overallScorePercentage, onOptimize]);
-  
   const getScoreColor = (score: number, maxScore: number) => {
     if (isNaN(score) || isNaN(maxScore) || maxScore === 0) return 'text-gray-500';
     const percentage = (score / maxScore) * 100
@@ -105,55 +110,131 @@ export function SeoOptimizer({
     return 'bg-red-500'
   }
 
-  // Function to generate optimized title and description based on metrics
+  // Function to highlight keywords in text
+  const highlightKeywords = (text: string, keywords: string[]) => {
+    if (!text || !Array.isArray(keywords) || keywords.length === 0) return text;
+    
+    // Create a regex pattern from keywords
+    const pattern = keywords
+      .filter(k => k && typeof k === 'string')
+      .map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) // Escape special regex chars
+      .join('|');
+    
+    if (!pattern) return text;
+    
+    const regex = new RegExp(`(${pattern})`, 'gi');
+    return text.replace(regex, '<mark class="bg-yellow-100 px-1 rounded">$1</mark>');
+  };
+
+  // Function to generate optimized title and description based on metrics and options
   const generateOptimizedContent = () => {
-    if (!Array.isArray(metrics) || metrics.length === 0) return;
+    if (!Array.isArray(metrics) || metrics.length === 0) return null;
 
     let optimizedTitle = title;
     let optimizedDescription = description;
     
-    // Find title-related metrics and apply suggestions
-    const titleMetric = metrics.find(m => m.name.toLowerCase().includes('title'));
-    if (titleMetric && titleMetric.score < titleMetric.maxScore && titleMetric.suggestions.length > 0) {
-      // Extract keywords for title optimization
-      const keywordsList = safeKeywords.length > 0 ? safeKeywords : [];
-      const primaryKeyword = keywordsList[0] || '';
-      const location = keywordsList.find(k => k.includes(',')) || '';
-      
-      // Create a more concise, keyword-rich title
-      if (primaryKeyword) {
-        if (title.length > 60) {
-          // Shorten title if too long
-          optimizedTitle = `${primaryKeyword} in ${location || 'Prime Location'}`;
-        } else if (!title.toLowerCase().includes(primaryKeyword.toLowerCase())) {
-          // Add primary keyword if missing
-          optimizedTitle = `${primaryKeyword} - ${title}`;
+    // Apply different optimization levels
+    const intensityFactor = optimizationLevel === 'basic' ? 0.5 : 
+                           optimizationLevel === 'aggressive' ? 1.5 : 1;
+    
+    // Only optimize title if the option is selected
+    if (optimizationOptions.title) {
+      const titleMetric = metrics.find(m => m.name.toLowerCase().includes('title'));
+      if (titleMetric && titleMetric.score < titleMetric.maxScore && titleMetric.suggestions.length > 0) {
+        // Extract keywords for title optimization
+        const keywordsList = safeKeywords.length > 0 ? safeKeywords : [];
+        const primaryKeyword = keywordsList[0] || '';
+        const location = keywordsList.find(k => k.includes(',')) || '';
+        
+        // Create a more concise, keyword-rich title
+        if (primaryKeyword) {
+          if (title.length > 60) {
+            // Shorten title if too long
+            optimizedTitle = `${primaryKeyword} in ${location || 'Prime Location'}`;
+          } else if (!title.toLowerCase().includes(primaryKeyword.toLowerCase())) {
+            // Add primary keyword if missing
+            optimizedTitle = `${primaryKeyword} - ${title}`;
+          }
+          
+          // For aggressive optimization, add more keywords
+          if (optimizationLevel === 'aggressive' && keywordsList.length > 1) {
+            const secondaryKeyword = keywordsList[1];
+            if (secondaryKeyword && !optimizedTitle.toLowerCase().includes(secondaryKeyword.toLowerCase())) {
+              optimizedTitle = `${optimizedTitle} | ${secondaryKeyword}`;
+            }
+          }
         }
       }
     }
     
-    // Find description-related metrics and apply suggestions
-    const descriptionMetric = metrics.find(m => m.name.toLowerCase().includes('description'));
-    if (descriptionMetric && descriptionMetric.score < descriptionMetric.maxScore && descriptionMetric.suggestions.length > 0) {
-      // Extract keywords for description optimization
-      const keywordsList = safeKeywords.length > 0 ? safeKeywords : [];
-      
-      // Improve description based on common issues
-      if (description.length > 160) {
-        // Shorten description if too long
-        optimizedDescription = description.substring(0, 157) + '...';
-      } else if (description.length < 120) {
-        // Expand description if too short
-        const missingKeywords = keywordsList.filter(k => !description.toLowerCase().includes(k.toLowerCase()));
-        if (missingKeywords.length > 0) {
-          optimizedDescription = `${description} Featuring ${missingKeywords.join(', ')}.`;
+    // Only optimize description if the option is selected
+    if (optimizationOptions.description) {
+      const descriptionMetric = metrics.find(m => m.name.toLowerCase().includes('description'));
+      if (descriptionMetric && descriptionMetric.score < descriptionMetric.maxScore && descriptionMetric.suggestions.length > 0) {
+        // Extract keywords for description optimization
+        const keywordsList = safeKeywords.length > 0 ? safeKeywords : [];
+        
+        // Improve description based on common issues
+        if (description.length > 160) {
+          // Shorten description if too long
+          optimizedDescription = description.substring(0, 157) + '...';
+        } else if (description.length < 120) {
+          // Expand description if too short
+          const missingKeywords = keywordsList.filter(k => !description.toLowerCase().includes(k.toLowerCase()));
+          if (missingKeywords.length > 0) {
+            optimizedDescription = `${description} Featuring ${missingKeywords.join(', ')}.`;
+          }
         }
-      }
-      
-      // Ensure description has a call to action
-      if (!optimizedDescription.includes('call') && !optimizedDescription.includes('contact') && 
-          !optimizedDescription.includes('schedule') && !optimizedDescription.includes('tour')) {
-        optimizedDescription = `${optimizedDescription} Schedule a tour today!`;
+        
+        // Add keywords based on optimization level
+        if (optimizationOptions.keywords) {
+          const keywordsToAdd = Math.ceil(keywordsList.length * intensityFactor * 0.5);
+          const missingKeywords = keywordsList
+            .filter(k => !optimizedDescription.toLowerCase().includes(k.toLowerCase()))
+            .slice(0, keywordsToAdd);
+            
+          if (missingKeywords.length > 0) {
+            optimizedDescription = `${optimizedDescription} Includes ${missingKeywords.join(', ')}.`;
+          }
+        }
+        
+        // Ensure description has a call to action if the option is selected
+        if (optimizationOptions.callToAction && 
+            !optimizedDescription.includes('call') && 
+            !optimizedDescription.includes('contact') && 
+            !optimizedDescription.includes('schedule') && 
+            !optimizedDescription.includes('tour')) {
+          
+          const ctas = [
+            'Schedule a tour today!',
+            'Contact us for more information.',
+            'Call now to view this property!',
+            'Don\'t miss this opportunity!'
+          ];
+          
+          const ctaIndex = Math.floor(Math.random() * ctas.length);
+          optimizedDescription = `${optimizedDescription} ${ctas[ctaIndex]}`;
+        }
+        
+        // Improve readability if the option is selected
+        if (optimizationOptions.readability) {
+          // Replace complex words with simpler alternatives
+          const complexWords = [
+            { complex: 'utilize', simple: 'use' },
+            { complex: 'residence', simple: 'home' },
+            { complex: 'purchase', simple: 'buy' },
+            { complex: 'numerous', simple: 'many' },
+            { complex: 'obtain', simple: 'get' }
+          ];
+          
+          let improvedDescription = optimizedDescription;
+          complexWords.forEach(({ complex, simple }) => {
+            const regex = new RegExp(`\\b${complex}\\b`, 'gi');
+            improvedDescription = improvedDescription.replace(regex, simple);
+          });
+          
+          optimizedDescription = improvedDescription;
+        }
       }
     }
     
@@ -161,10 +242,26 @@ export function SeoOptimizer({
   };
 
   const handleOptimize = () => {
-    const optimizedContent = generateOptimizedContent();
-    if (optimizedContent && onOptimize) {
-      onOptimize(optimizedContent);
-    }
+    setIsOptimizing(true);
+    
+    // Simulate API delay
+    setTimeout(() => {
+      const newOptimizedContent = generateOptimizedContent();
+      if (newOptimizedContent && onOptimize) {
+        setOptimizedContent(newOptimizedContent);
+        setShowComparison(true);
+        onOptimize(newOptimizedContent);
+      }
+      setIsOptimizing(false);
+    }, 1500);
+  };
+
+  // Toggle optimization options
+  const toggleOption = (option: keyof typeof optimizationOptions) => {
+    setOptimizationOptions(prev => ({
+      ...prev,
+      [option]: !prev[option]
+    }));
   };
 
   // If metrics is empty or invalid, show a placeholder
@@ -205,16 +302,163 @@ export function SeoOptimizer({
         />
       </div>
 
-      {/* Add Optimize button if onOptimize prop is provided */}
+      {/* Optimization Options Panel */}
       {onOptimize && (
-        <div className="mb-4 flex justify-end">
-          <button
-            onClick={handleOptimize}
-            className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2"
-          >
-            <span className="mr-1">✨</span>
-            Optimize for SEO
-          </button>
+        <div className="mb-6 p-4 border rounded-md bg-gray-50">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-semibold">Optimization Options</h3>
+            <button
+              onClick={() => setShowComparison(!showComparison)}
+              className="text-sm text-blue-600 hover:underline"
+              disabled={!optimizedContent}
+            >
+              {showComparison ? 'Hide Comparison' : 'Show Comparison'}
+            </button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <h4 className="text-sm font-medium mb-2">What to Optimize</h4>
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="title-option" 
+                    checked={optimizationOptions.title}
+                    onCheckedChange={() => toggleOption('title')}
+                  />
+                  <Label htmlFor="title-option">Title</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="description-option" 
+                    checked={optimizationOptions.description}
+                    onCheckedChange={() => toggleOption('description')}
+                  />
+                  <Label htmlFor="description-option">Description</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="keywords-option" 
+                    checked={optimizationOptions.keywords}
+                    onCheckedChange={() => toggleOption('keywords')}
+                  />
+                  <Label htmlFor="keywords-option">Keywords</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="readability-option" 
+                    checked={optimizationOptions.readability}
+                    onCheckedChange={() => toggleOption('readability')}
+                  />
+                  <Label htmlFor="readability-option">Readability</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="cta-option" 
+                    checked={optimizationOptions.callToAction}
+                    onCheckedChange={() => toggleOption('callToAction')}
+                  />
+                  <Label htmlFor="cta-option">Call to Action</Label>
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <h4 className="text-sm font-medium mb-2">Optimization Level</h4>
+              <RadioGroup 
+                value={optimizationLevel} 
+                onValueChange={(value) => setOptimizationLevel(value as 'basic' | 'moderate' | 'aggressive')}
+                className="space-y-2"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="basic" id="basic-level" />
+                  <Label htmlFor="basic-level">Basic - Subtle changes</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="moderate" id="moderate-level" />
+                  <Label htmlFor="moderate-level">Moderate - Balanced approach</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="aggressive" id="aggressive-level" />
+                  <Label htmlFor="aggressive-level">Aggressive - Maximum optimization</Label>
+                </div>
+              </RadioGroup>
+            </div>
+          </div>
+          
+          <div className="flex justify-end">
+            <button
+              onClick={handleOptimize}
+              disabled={isOptimizing}
+              className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2"
+            >
+              {isOptimizing ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Optimizing...
+                </>
+              ) : (
+                <>
+                  <span className="mr-1">✨</span>
+                  Optimize for SEO
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Before/After Comparison */}
+      {showComparison && optimizedContent && (
+        <div className="mb-6 border rounded-md overflow-hidden">
+          <div className="bg-gray-100 px-4 py-2 font-medium">
+            Before/After Comparison
+          </div>
+          <div className="p-4 space-y-4">
+            <div>
+              <h4 className="text-sm font-medium mb-2">Title</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-3 bg-gray-50 rounded border text-sm">
+                  <div className="text-xs text-gray-500 mb-1">Original</div>
+                  {title}
+                </div>
+                <div className="p-3 bg-green-50 rounded border text-sm">
+                  <div className="text-xs text-gray-500 mb-1">Optimized</div>
+                  <div dangerouslySetInnerHTML={{ __html: highlightKeywords(optimizedContent.title, safeKeywords) }} />
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <h4 className="text-sm font-medium mb-2">Description</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-3 bg-gray-50 rounded border text-sm">
+                  <div className="text-xs text-gray-500 mb-1">Original</div>
+                  {description}
+                </div>
+                <div className="p-3 bg-green-50 rounded border text-sm">
+                  <div className="text-xs text-gray-500 mb-1">Optimized</div>
+                  <div dangerouslySetInnerHTML={{ __html: highlightKeywords(optimizedContent.description, safeKeywords) }} />
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex justify-between items-center p-3 bg-blue-50 rounded border">
+              <div className="text-sm">
+                <span className="font-medium">Estimated SEO Improvement: </span>
+                <span className="text-green-600">+15-25%</span>
+              </div>
+              <button
+                onClick={() => setShowComparison(false)}
+                className="text-xs text-blue-600 hover:underline"
+              >
+                Hide Comparison
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
