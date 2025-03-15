@@ -33,34 +33,40 @@ export function SeoOptimizer({
   const [activeTab, setActiveTab] = useState<'analysis' | 'keywords'>('analysis')
   const [showKeywordInsights, setShowKeywordInsights] = useState(false)
   
+  // Ensure keywords is always an array
+  const safeKeywords = Array.isArray(keywords) ? keywords : [];
+  
   // Sample keyword insights - in real implementation, these would come from an API
   const keywordInsights: KeywordInsight[] = [
-    ...keywords.map(keyword => ({
+    ...safeKeywords.map(keyword => ({
       keyword,
       volume: Math.floor(Math.random() * 1000) + 'k/month',
       competition: ['high', 'medium', 'low'][Math.floor(Math.random() * 3)] as 'high' | 'medium' | 'low',
       recommended: Math.random() > 0.3
     })),
-    {
-      keyword: 'luxury ' + keywords[0].split(' ').slice(-1)[0],
-      volume: '52k/month',
-      competition: 'high',
-      recommended: true
-    },
-    {
-      keyword: 'affordable ' + keywords[0].split(' ').slice(-1)[0],
-      volume: '87k/month',
-      competition: 'medium',
-      recommended: true
-    }
+    ...(safeKeywords.length > 0 ? [
+      {
+        keyword: 'luxury ' + safeKeywords[0].split(' ').slice(-1)[0],
+        volume: '52k/month',
+        competition: 'high' as const,
+        recommended: true
+      },
+      {
+        keyword: 'affordable ' + safeKeywords[0].split(' ').slice(-1)[0],
+        volume: '87k/month',
+        competition: 'medium' as const,
+        recommended: true
+      }
+    ] : [])
   ]
   
-  // Calculate overall SEO score
-  const totalScore = metrics.reduce((sum, metric) => sum + metric.score, 0)
-  const totalMaxScore = metrics.reduce((sum, metric) => sum + metric.maxScore, 0)
-  const overallScorePercentage = Math.round((totalScore / totalMaxScore) * 100)
+  // Calculate overall SEO score with safeguards against NaN
+  const totalScore = Array.isArray(metrics) ? metrics.reduce((sum, metric) => sum + (isNaN(metric.score) ? 0 : metric.score), 0) : 0;
+  const totalMaxScore = Array.isArray(metrics) ? metrics.reduce((sum, metric) => sum + (isNaN(metric.maxScore) ? 0 : metric.maxScore), 0) : 1; // Avoid division by zero
+  const overallScorePercentage = totalMaxScore > 0 ? Math.round((totalScore / totalMaxScore) * 100) : 0;
   
   const getScoreColor = (score: number, maxScore: number) => {
+    if (isNaN(score) || isNaN(maxScore) || maxScore === 0) return 'text-gray-500';
     const percentage = (score / maxScore) * 100
     if (percentage >= 80) return 'text-green-500'
     if (percentage >= 60) return 'text-yellow-500'
@@ -74,6 +80,7 @@ export function SeoOptimizer({
   }
   
   const getScoreLabel = (percentage: number) => {
+    if (isNaN(percentage)) return 'Not Available';
     if (percentage >= 80) return 'Excellent'
     if (percentage >= 60) return 'Good'
     if (percentage >= 40) return 'Fair'
@@ -81,9 +88,29 @@ export function SeoOptimizer({
   }
   
   const getProgressColor = (percentage: number) => {
+    if (isNaN(percentage)) return 'bg-gray-300';
     if (percentage >= 80) return 'bg-green-500'
     if (percentage >= 60) return 'bg-yellow-500'
     return 'bg-red-500'
+  }
+
+  // If metrics is empty or invalid, show a placeholder
+  if (!Array.isArray(metrics) || metrics.length === 0) {
+    return (
+      <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold">SEO Optimization</h2>
+          <div className="flex items-center gap-2 text-sm">
+            <span className="font-medium">Status:</span>
+            <span className="text-gray-500">No data available</span>
+          </div>
+        </div>
+        
+        <div className="p-4 bg-gray-50 rounded-md text-sm text-gray-600">
+          SEO metrics are being processed. Please check back shortly or regenerate the listing.
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -127,12 +154,12 @@ export function SeoOptimizer({
           <div className="space-y-6">
             <div>
               <h3 className="font-semibold mb-2">Title</h3>
-              <p className="text-sm text-muted-foreground bg-gray-50 p-2 rounded border">{title}</p>
+              <p className="text-sm text-muted-foreground bg-gray-50 p-2 rounded border">{title || 'No title available'}</p>
               <div className="flex gap-2 mt-2">
                 <div className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                  {title.length} characters (Ideal: 50-60)
+                  {(title || '').length} characters (Ideal: 50-60)
                 </div>
-                {title.includes(keywords[0]) && (
+                {title && safeKeywords.length > 0 && title.includes(safeKeywords[0]) && (
                   <div className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
                     Contains primary keyword
                   </div>
@@ -142,13 +169,13 @@ export function SeoOptimizer({
 
             <div>
               <h3 className="font-semibold mb-2">Description</h3>
-              <p className="text-sm text-muted-foreground bg-gray-50 p-2 rounded border">{description}</p>
+              <p className="text-sm text-muted-foreground bg-gray-50 p-2 rounded border">{description || 'No description available'}</p>
               <div className="flex gap-2 mt-2">
-                <div className={`text-xs ${description.length < 120 || description.length > 160 ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'} px-2 py-1 rounded-full`}>
-                  {description.length} characters (Ideal: 120-160)
+                <div className={`text-xs ${!description || description.length < 120 || description.length > 160 ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'} px-2 py-1 rounded-full`}>
+                  {(description || '').length} characters (Ideal: 120-160)
                 </div>
                 <div className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                  {keywords.filter(k => description.includes(k)).length} keywords
+                  {description && safeKeywords.length > 0 ? safeKeywords.filter(k => description.includes(k)).length : 0} keywords
                 </div>
               </div>
             </div>
@@ -161,7 +188,7 @@ export function SeoOptimizer({
                     <div className="flex items-center justify-between">
                       <span className="font-medium">{metric.name}</span>
                       <span className={getScoreColor(metric.score, metric.maxScore)}>
-                        {metric.score}/{metric.maxScore}
+                        {isNaN(metric.score) ? 0 : metric.score}/{isNaN(metric.maxScore) ? 0 : metric.maxScore}
                       </span>
                     </div>
                     <div className="h-2 bg-secondary rounded-full overflow-hidden">
@@ -173,11 +200,11 @@ export function SeoOptimizer({
                           )
                         }`}
                         style={{
-                          width: `${(metric.score / metric.maxScore) * 100}%`,
+                          width: `${metric.maxScore > 0 ? (metric.score / metric.maxScore) * 100 : 0}%`,
                         }}
                       />
                     </div>
-                    {metric.suggestions.length > 0 && (
+                    {Array.isArray(metric.suggestions) && metric.suggestions.length > 0 && (
                       <div className="mt-2 space-y-1">
                         {metric.suggestions.map((suggestion, idx) => (
                           <div
@@ -211,48 +238,54 @@ export function SeoOptimizer({
                 </button>
               </div>
               
-              <div className="rounded-md border overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-2 text-left font-medium">Keyword</th>
-                      {showKeywordInsights && (
-                        <>
-                          <th className="px-4 py-2 text-left font-medium">Search Volume</th>
-                          <th className="px-4 py-2 text-left font-medium">Competition</th>
-                          <th className="px-4 py-2 text-left font-medium">Recommended</th>
-                        </>
-                      )}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {(showKeywordInsights ? keywordInsights : keywords.map(k => ({ keyword: k, volume: '', competition: 'medium' as const, recommended: false }))).map((item, idx) => (
-                      <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                        <td className="px-4 py-2">{item.keyword}</td>
+              {keywordInsights.length > 0 ? (
+                <div className="rounded-md border overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-2 text-left font-medium">Keyword</th>
                         {showKeywordInsights && (
                           <>
-                            <td className="px-4 py-2">{item.volume}</td>
-                            <td className="px-4 py-2">
-                              <span className={getCompetitionColor(item.competition)}>
-                                {item.competition.charAt(0).toUpperCase() + item.competition.slice(1)}
-                              </span>
-                            </td>
-                            <td className="px-4 py-2">
-                              {item.recommended ? (
-                                <span className="text-green-500">✓</span>
-                              ) : (
-                                <span className="text-red-500">✗</span>
-                              )}
-                            </td>
+                            <th className="px-4 py-2 text-left font-medium">Search Volume</th>
+                            <th className="px-4 py-2 text-left font-medium">Competition</th>
+                            <th className="px-4 py-2 text-left font-medium">Recommended</th>
                           </>
                         )}
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="divide-y">
+                      {(showKeywordInsights ? keywordInsights : safeKeywords.map(k => ({ keyword: k, volume: '', competition: 'medium' as const, recommended: false }))).map((item, idx) => (
+                        <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                          <td className="px-4 py-2">{item.keyword}</td>
+                          {showKeywordInsights && (
+                            <>
+                              <td className="px-4 py-2">{item.volume}</td>
+                              <td className="px-4 py-2">
+                                <span className={getCompetitionColor(item.competition)}>
+                                  {item.competition.charAt(0).toUpperCase() + item.competition.slice(1)}
+                                </span>
+                              </td>
+                              <td className="px-4 py-2">
+                                {item.recommended ? (
+                                  <span className="text-green-500">✓</span>
+                                ) : (
+                                  <span className="text-red-500">✗</span>
+                                )}
+                              </td>
+                            </>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="p-4 bg-gray-50 rounded-md text-sm text-gray-600">
+                  No keywords available. Please regenerate the listing.
+                </div>
+              )}
               
-              {showKeywordInsights && (
+              {showKeywordInsights && keywordInsights.length > 0 && (
                 <div className="mt-4 bg-blue-50 p-3 rounded-md text-sm text-blue-800">
                   <div className="flex gap-2">
                     <span>ℹ️</span>
@@ -280,7 +313,7 @@ export function SeoOptimizer({
                     </p>
                     <div className="text-xs text-gray-500">
                       <span className="font-medium">Best keywords: </span>
-                      {keywords.slice(0, 3).join(', ')}
+                      {safeKeywords.slice(0, Math.min(3, safeKeywords.length)).join(', ') || 'No keywords available'}
                     </div>
                   </div>
                   
@@ -296,7 +329,7 @@ export function SeoOptimizer({
                     </p>
                     <div className="text-xs text-gray-500">
                       <span className="font-medium">Best keywords: </span>
-                      {keywords.slice(0, 2).join(', ')}
+                      {safeKeywords.slice(0, Math.min(2, safeKeywords.length)).join(', ') || 'No keywords available'}
                     </div>
                   </div>
                 </div>

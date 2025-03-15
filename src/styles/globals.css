@@ -52,4 +52,18 @@ body {
   .card {
     @apply bg-white rounded-lg shadow-sm p-6;
   }
+}
+
+/* Fix for dropdown menus */
+[data-radix-popper-content-wrapper] {
+  z-index: 9999 !important;
+}
+
+.select-content,
+[role="listbox"],
+[data-radix-select-content],
+[data-radix-dropdown-menu-content] {
+  background-color: white !important;
+  z-index: 9999 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
 } 
