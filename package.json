@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "vercel-build": "npm install && npm run build",
+    "vercel-build": "node deploy.js",
     "start": "next start",
     "lint": "next lint"
   },
