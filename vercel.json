@@ -1,18 +1,23 @@
 {
-  "buildCommand": "npm run build",
-  "outputDirectory": ".next",
-  "framework": "nextjs",
+  "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/next"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
+    }
+  ],
   "env": {
-    "NODE_OPTIONS": "--max-old-space-size=3072"
+    "NODE_ENV": "production"
   },
-  "functions": {
-    "src/app/api/listings/generate/route.ts": {
-      "memory": 1024,
-      "maxDuration": 60
-    },
-    "src/app/api/**/*.ts": {
-      "memory": 1024,
-      "maxDuration": 60
+  "build": {
+    "env": {
+      "NODE_ENV": "production"
     }
   }
 } 
