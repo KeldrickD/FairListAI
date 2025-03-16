@@ -5,6 +5,7 @@ import Head from 'next/head'
 import { MainLayout } from '@/components/layout/MainLayout'
 import { PerformanceMetrics } from '@/components/analytics/PerformanceMetrics'
 import { EngagementChart } from '@/components/analytics/EngagementChart'
+import { LeadGeneration } from '@/components/analytics/LeadGeneration'
 import { format, subDays } from 'date-fns'
 import { DateRange } from 'react-day-picker'
 
@@ -31,6 +32,15 @@ const ListingAnalyticsPage: NextPage = () => {
       leads: Math.floor(Math.random() * 10) + 1,
       shares: Math.floor(Math.random() * 5) + 1,
       comments: Math.floor(Math.random() * 8) + 1
+    })),
+    leads: Array.from({ length: 25 }, (_, i) => ({
+      id: `lead-${i + 1}`,
+      name: `Lead ${i + 1}`,
+      email: `lead${i + 1}@example.com`,
+      phone: i % 3 === 0 ? `+1 555-${100 + i}` : undefined,
+      source: ['website', 'referral', 'social', 'email', 'direct'][i % 5],
+      status: ['new', 'contacted', 'qualified', 'converted', 'lost'][i % 5],
+      createdAt: format(subDays(new Date(), Math.floor(Math.random() * 30)), 'yyyy-MM-dd\'T\'HH:mm:ss')
     }))
   }
   
@@ -83,7 +93,7 @@ const ListingAnalyticsPage: NextPage = () => {
               </div>
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h3 className="text-sm font-medium text-gray-500 mb-1">Leads Generated</h3>
-                <p className="text-3xl font-bold">24</p>
+                <p className="text-3xl font-bold">{mockData.leads.length}</p>
                 <p className="text-xs text-gray-500 mt-1">{mockData.conversionRate}% conversion rate</p>
               </div>
               <div className="bg-gray-50 p-4 rounded-lg">
@@ -119,11 +129,19 @@ const ListingAnalyticsPage: NextPage = () => {
             />
           </div>
           
+          <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+            <h2 className="text-xl font-bold mb-4">Lead Management</h2>
+            <LeadGeneration 
+              leads={mockData.leads}
+              conversionRate={mockData.conversionRate}
+            />
+          </div>
+          
           <div className="bg-gray-50 p-6 rounded-lg text-center">
             <h2 className="text-xl font-bold mb-2">More Analytics Coming Soon</h2>
             <p className="text-gray-500 mb-4">
               We're gradually rolling out the full analytics dashboard. Check back later for 
-              lead tracking and A/B testing results.
+              A/B testing results.
             </p>
             <button 
               onClick={() => router.back()}
