@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useRouter } from 'next/router';
-import { ArrowLeftIcon, DownloadIcon, ShareIcon } from '@heroicons/react/24/outline';
+import { ArrowLeft, Download, Share } from 'lucide-react';
 
 const AnalyticsPage: NextPage = () => {
   const router = useRouter();
@@ -28,7 +28,7 @@ const AnalyticsPage: NextPage = () => {
               className="mr-4"
               onClick={() => router.back()}
             >
-              <ArrowLeftIcon className="h-4 w-4 mr-2" />
+              <ArrowLeft className="h-4 w-4 mr-2" />
               Back
             </Button>
             
@@ -50,11 +50,11 @@ const AnalyticsPage: NextPage = () => {
               
               <div className="flex gap-2">
                 <Button variant="outline" size="sm">
-                  <DownloadIcon className="h-4 w-4 mr-2" />
+                  <Download className="h-4 w-4 mr-2" />
                   Export
                 </Button>
                 <Button variant="outline" size="sm">
-                  <ShareIcon className="h-4 w-4 mr-2" />
+                  <Share className="h-4 w-4 mr-2" />
                   Share
                 </Button>
               </div>
