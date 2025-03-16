@@ -4,13 +4,21 @@ import { NextPage } from 'next'
 import Head from 'next/head'
 import { MainLayout } from '@/components/layout/MainLayout'
 import { PerformanceMetrics } from '@/components/analytics/PerformanceMetrics'
+import { EngagementChart } from '@/components/analytics/EngagementChart'
 import { format, subDays } from 'date-fns'
+import { DateRange } from 'react-day-picker'
 
 const ListingAnalyticsPage: NextPage = () => {
   const router = useRouter()
   const { id } = router.query
   
-  // Mock data for the PerformanceMetrics component
+  // State for date range
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: subDays(new Date(), 30),
+    to: new Date(),
+  })
+  
+  // Mock data for the analytics components
   const mockData = {
     views: 1245,
     uniqueVisitors: 876,
@@ -25,6 +33,13 @@ const ListingAnalyticsPage: NextPage = () => {
       comments: Math.floor(Math.random() * 8) + 1
     }))
   }
+  
+  // Filter data based on date range
+  const filteredEngagementData = mockData.engagementByDay.filter(day => {
+    const date = new Date(day.date)
+    return (!dateRange?.from || date >= dateRange.from) && 
+           (!dateRange?.to || date <= dateRange.to)
+  })
   
   if (!id || typeof id !== 'string') {
     return (
@@ -92,7 +107,15 @@ const ListingAnalyticsPage: NextPage = () => {
               averageTimeOnPage={mockData.averageTimeOnPage}
               bounceRate={mockData.bounceRate}
               conversionRate={mockData.conversionRate}
-              engagementByDay={mockData.engagementByDay}
+              engagementByDay={filteredEngagementData}
+            />
+          </div>
+          
+          <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+            <h2 className="text-xl font-bold mb-4">Engagement Analysis</h2>
+            <EngagementChart 
+              engagementData={filteredEngagementData}
+              dateRange={dateRange}
             />
           </div>
           
@@ -100,7 +123,7 @@ const ListingAnalyticsPage: NextPage = () => {
             <h2 className="text-xl font-bold mb-2">More Analytics Coming Soon</h2>
             <p className="text-gray-500 mb-4">
               We're gradually rolling out the full analytics dashboard. Check back later for 
-              engagement charts, lead tracking, and A/B testing results.
+              lead tracking and A/B testing results.
             </p>
             <button 
               onClick={() => router.back()}
