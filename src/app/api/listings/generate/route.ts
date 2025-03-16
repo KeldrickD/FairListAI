@@ -12,7 +12,6 @@ const openai = new OpenAI({
 // Set a longer timeout for the API route
 export const config = {
   runtime: 'edge',
-  regions: ['iad1'], // Use a specific region for better performance
 }
 
 export async function POST(request: Request) {
@@ -53,7 +52,7 @@ export async function POST(request: Request) {
     // Process all OpenAI requests in parallel for better performance
     const [descriptionResponse, hashtagResponse] = await Promise.all([
       openai.chat.completions.create({
-        model: "gpt-4-turbo-preview",
+        model: "gpt-3.5-turbo", // Using a faster model for better performance
         messages: [
           {
             role: "system",
@@ -70,7 +69,7 @@ export async function POST(request: Request) {
       
       // Generate relevant hashtags in parallel
       openai.chat.completions.create({
-        model: "gpt-4-turbo-preview",
+        model: "gpt-3.5-turbo", // Using a faster model for better performance
         messages: [
           {
             role: "system",
@@ -111,7 +110,7 @@ export async function POST(request: Request) {
     TikTok: [Trendy caption with hashtags - max 150 chars]`
 
     const socialMediaResponse = await openai.chat.completions.create({
-      model: "gpt-4-turbo-preview",
+      model: "gpt-3.5-turbo", // Using a faster model for better performance
       messages: [
         {
           role: "system",

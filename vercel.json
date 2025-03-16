@@ -2,14 +2,5 @@
   "version": 2,
   "buildCommand": "npm run vercel-build",
   "outputDirectory": ".next",
-  "framework": "nextjs",
-  "env": {
-    "NODE_ENV": "production",
-    "NODE_OPTIONS": "--max-old-space-size=3072"
-  },
-  "functions": {
-    "api/listings/generate/**": {
-      "maxDuration": 60
-    }
-  }
+  "framework": "nextjs"
 } 
