@@ -8,11 +8,11 @@ import { EngagementChart } from './EngagementChart'
 import { LeadGeneration } from './LeadGeneration'
 import { ABTestingPanel } from './ABTestingPanel'
 import { PlatformBreakdown } from './PlatformBreakdown'
-import { DateRangePicker } from './DateRangePicker'
 import { useToast } from '@/components/ui/use-toast'
 import { DatePickerWithRange } from '@/components/ui/date-range-picker'
 import { CalendarIcon, DownloadIcon, RefreshIcon } from 'lucide-react'
 import { DateRange } from 'react-day-picker'
+import { addDays, format, subDays } from 'date-fns'
 
 // Sample data types
 export interface ListingAnalytics {
@@ -75,6 +75,7 @@ export interface ABTestVariant {
   views: number
   conversions: number
   conversionRate: number
+  isControl: boolean
 }
 
 interface AnalyticsDashboardProps {
@@ -141,8 +142,8 @@ export function AnalyticsDashboard({ listingId, onRefresh }: AnalyticsDashboardP
             startDate: "2023-05-15T00:00:00Z",
             endDate: "2023-05-29T23:59:59Z",
             variants: [
-              { id: "var1", name: "Original", description: "3 Bed, 2 Bath House in Downtown", views: 623, conversions: 24, conversionRate: 3.85 },
-              { id: "var2", name: "Variant B", description: "Stunning 3 Bed Downtown Home with Modern Finishes", views: 622, conversions: 36, conversionRate: 5.79 }
+              { id: "var1", name: "Original", description: "3 Bed, 2 Bath House in Downtown", views: 623, conversions: 24, conversionRate: 3.85, isControl: true },
+              { id: "var2", name: "Variant B", description: "Stunning 3 Bed Downtown Home with Modern Finishes", views: 622, conversions: 36, conversionRate: 5.79, isControl: false }
             ],
             winningVariantId: "var2"
           },
@@ -152,8 +153,8 @@ export function AnalyticsDashboard({ listingId, onRefresh }: AnalyticsDashboardP
             status: "running",
             startDate: "2023-06-01T00:00:00Z",
             variants: [
-              { id: "var1", name: "Concise", description: "Short, punchy description focusing on key features", views: 312, conversions: 14, conversionRate: 4.49 },
-              { id: "var2", name: "Detailed", description: "Comprehensive description with neighborhood details", views: 311, conversions: 16, conversionRate: 5.14 }
+              { id: "var1", name: "Concise", description: "Short, punchy description focusing on key features", views: 312, conversions: 14, conversionRate: 4.49, isControl: true },
+              { id: "var2", name: "Detailed", description: "Comprehensive description with neighborhood details", views: 311, conversions: 16, conversionRate: 5.14, isControl: false }
             ]
           }
         ]

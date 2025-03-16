@@ -6,11 +6,13 @@ import { Progress } from '@/components/ui/progress'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { ABTest, ABVariant } from './AnalyticsDashboard'
 
-interface ABTestingProps {
+interface ABTestingPanelProps {
   tests: ABTest[]
+  listingId?: string
+  onTestCreated?: () => void
 }
 
-export function ABTesting({ tests }: ABTestingProps) {
+export function ABTestingPanel({ tests, listingId, onTestCreated }: ABTestingPanelProps) {
   const [activeTest, setActiveTest] = useState<string>(tests.length > 0 ? tests[0].id : '')
   
   // Get the currently selected test
