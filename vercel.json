@@ -8,7 +8,7 @@
     "NODE_OPTIONS": "--max-old-space-size=3072"
   },
   "functions": {
-    "src/app/api/listings/generate/route.ts": {
+    "api/listings/generate/**": {
       "maxDuration": 60
     }
   }
