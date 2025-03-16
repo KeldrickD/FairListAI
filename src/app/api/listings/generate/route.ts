@@ -12,6 +12,7 @@ const openai = new OpenAI({
 // Set a longer timeout for the API route
 export const config = {
   runtime: 'edge',
+  maxDuration: 60, // Set maximum duration to 60 seconds
 }
 
 export async function POST(request: Request) {
