@@ -6,7 +6,7 @@ import { PropertyData } from '@/components/listing/PropertyForm'
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
   timeout: 30000, // 30 second timeout for API requests
-  maxRetries: 2, // Retry failed requests twice
+  maxRetries: 3, // Retry failed requests up to 3 times
 })
 
 // Set a longer timeout for the API route
@@ -19,166 +19,96 @@ export async function POST(request: Request) {
   try {
     const data: PropertyData = await request.json()
 
-    // Generate the main listing description
-    const descriptionPrompt = `Create a detailed and engaging property listing for a ${data.bedrooms} bed, ${data.bathrooms} bath ${data.propertyType} in ${data.location}. 
-    Key features: ${data.features.join(', ')}. 
-    Square footage: ${data.squareFeet}. 
-    Price: $${data.price.toLocaleString()}. 
-    Additional notes: ${data.additionalNotes}.
-    
+    // Create a more concise prompt to reduce token usage and processing time
+    const descriptionPrompt = `Create a property listing for a ${data.bedrooms} bed, ${data.bathrooms} bath ${data.propertyType} in ${data.location}. 
+    Features: ${data.features.join(', ')}. 
+    Size: ${data.squareFeet} sq ft. Price: $${data.price.toLocaleString()}. 
+    Notes: ${data.additionalNotes}.
     Template: ${data.template || 'standard'}
-    Writing Style: ${data.style || 'professional'}
-    
-    TEMPLATE GUIDELINES:
-    - Standard Listing (200-300 words): Perfect for Zillow, Realtor.com, and Redfin-style descriptions.
-    - Short Listing (100-150 words): Ideal for social media captions, MLS listings, and quick property overviews.
-    - Luxury Home (300-350 words): For high-end properties with premium features and amenities.
-    - Investment Property: Focuses on ROI, rental income, and investment potential.
-    - New Construction: Highlights builder features, warranties, and modern amenities.
-    - 55+ Community: Emphasizes lifestyle, amenities, and low-maintenance living.
-    - Vacation Rental: Perfect for short-term rentals, highlighting getaway features.
-    - Fixer-Upper/Foreclosure: Focuses on potential, investment opportunity, and value.
-    
-    WRITING STYLE GUIDELINES:
-    - Standard Professional: Clear, concise, informative, and engaging.
-    - Luxury & High-End: Elegant, sophisticated, upscale language.
-    - Investor-Friendly: Direct, ROI-focused, clear financial value.
-    - Casual & Friendly: Conversational, engaging, warm tone.
-    - SEO-Optimized: Keyword-rich, designed for ranking in searches.
-    - Storytelling / Lifestyle: Emotional, immersive, paints a picture.
-    - Social Media Style: Short, punchy, high-energy, with emojis.
-    
-    The listing should be professional, highlight the property's best features, and be optimized for real estate websites.`
+    Style: ${data.style || 'professional'}`
 
-    // Process all OpenAI requests in parallel for better performance
-    const [descriptionResponse, hashtagResponse] = await Promise.all([
-      openai.chat.completions.create({
-        model: "gpt-3.5-turbo", // Using a faster model for better performance
-        messages: [
-          {
-            role: "system",
-            content: "You are a professional real estate copywriter who creates engaging property listings. You adapt your writing style and format based on the specified template and style guidelines."
-          },
-          {
-            role: "user",
-            content: descriptionPrompt
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 500,
-      }),
-      
-      // Generate relevant hashtags in parallel
-      openai.chat.completions.create({
-        model: "gpt-3.5-turbo", // Using a faster model for better performance
-        messages: [
-          {
-            role: "system",
-            content: "You are a social media expert who creates relevant hashtags for real estate content."
-          },
-          {
-            role: "user",
-            content: `Generate 10 relevant real estate hashtags for a ${data.propertyType} in ${data.location}.
-            Include a mix of property-specific, location-specific, and general real estate hashtags.`
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 100,
-      })
-    ]);
-
-    // Extract the description
-    const description = descriptionResponse.choices[0].message.content;
-    
-    // Now generate social media captions with the description
-    const socialMediaPrompt = `Create three short and engaging social media captions for this property. Each caption should be under 150 characters.
-    Property: ${description}
-
-    Writing Style: ${data.style || 'professional'}
-
-    WRITING STYLE GUIDELINES:
-    - Standard Professional: Clear, concise, informative, and engaging.
-    - Luxury & High-End: Elegant, sophisticated, upscale language.
-    - Investor-Friendly: Direct, ROI-focused, clear financial value.
-    - Casual & Friendly: Conversational, engaging, warm tone.
-    - SEO-Optimized: Keyword-rich, designed for ranking in searches.
-    - Storytelling / Lifestyle: Emotional, immersive, paints a picture.
-    - Social Media Style: Short, punchy, high-energy, with emojis.
-
-    Format your response exactly like this (keep the labels):
-    Instagram: [Short caption with emojis - max 150 chars]
-    Facebook: [Engaging caption with key features - max 150 chars]
-    TikTok: [Trendy caption with hashtags - max 150 chars]`
-
-    const socialMediaResponse = await openai.chat.completions.create({
+    // Use a single API call to generate all content at once
+    const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo", // Using a faster model for better performance
       messages: [
         {
           role: "system",
-          content: "You are a social media expert who creates concise, engaging real estate content. Keep all captions under 150 characters and adapt your tone to match the specified writing style."
+          content: `You are a real estate content generator that creates:
+          1. A property description (200-300 words)
+          2. Three social media captions (under 150 chars each for Instagram, Facebook, TikTok)
+          3. Ten relevant hashtags
+          
+          Format your response exactly as follows:
+          DESCRIPTION:
+          [Your property description here]
+          
+          INSTAGRAM:
+          [Instagram caption with emojis]
+          
+          FACEBOOK:
+          [Facebook caption with key features]
+          
+          TIKTOK:
+          [TikTok caption with hashtags]
+          
+          HASHTAGS:
+          #tag1 #tag2 #tag3 #tag4 #tag5 #tag6 #tag7 #tag8 #tag9 #tag10`
         },
         {
           role: "user",
-          content: socialMediaPrompt
+          content: descriptionPrompt
         }
       ],
       temperature: 0.7,
-      max_tokens: 300,
-      response_format: { type: "text" }
-    })
+      max_tokens: 800,
+    });
 
-    // Parse social media response
-    const socialMediaText = socialMediaResponse.choices[0]?.message?.content || ''
-    let instagram = '', facebook = '', tiktok = ''
+    // Parse the response
+    const content = response.choices[0].message.content || '';
     
-    // More robust parsing of social media captions
-    const lines = socialMediaText.split('\n').map(line => line.trim()).filter(Boolean)
-    for (const line of lines) {
-      const lowercaseLine = line.toLowerCase()
-      if (lowercaseLine.startsWith('instagram:')) {
-        instagram = line.substring('instagram:'.length).trim()
-      } else if (lowercaseLine.startsWith('facebook:')) {
-        facebook = line.substring('facebook:'.length).trim()
-      } else if (lowercaseLine.startsWith('tiktok:')) {
-        tiktok = line.substring('tiktok:'.length).trim()
-      }
-    }
+    // Extract sections using regex
+    const descriptionMatch = content.match(/DESCRIPTION:([\s\S]*?)(?=INSTAGRAM:|$)/i);
+    const instagramMatch = content.match(/INSTAGRAM:([\s\S]*?)(?=FACEBOOK:|$)/i);
+    const facebookMatch = content.match(/FACEBOOK:([\s\S]*?)(?=TIKTOK:|$)/i);
+    const tiktokMatch = content.match(/TIKTOK:([\s\S]*?)(?=HASHTAGS:|$)/i);
+    const hashtagsMatch = content.match(/HASHTAGS:([\s\S]*?)$/i);
+    
+    // Extract and clean the content
+    const description = descriptionMatch ? descriptionMatch[1].trim() : '';
+    const instagram = instagramMatch ? instagramMatch[1].trim() : '';
+    const facebook = facebookMatch ? facebookMatch[1].trim() : '';
+    const tiktok = tiktokMatch ? tiktokMatch[1].trim() : '';
+    
+    // Parse hashtags
+    const hashtags = hashtagsMatch 
+      ? hashtagsMatch[1].trim().split(/\s+/).filter(tag => tag.startsWith('#'))
+      : [];
 
     // Ensure captions don't exceed 150 characters
     const truncateCaption = (caption: string) => {
-      return caption.length > 150 ? caption.substring(0, 147) + '...' : caption
-    }
-
-    instagram = truncateCaption(instagram || 'Check out this amazing property! ✨')
-    facebook = truncateCaption(facebook || instagram)
-    tiktok = truncateCaption(tiktok || instagram)
-
-    // Parse hashtags
-    const hashtags = hashtagResponse.choices[0]?.message?.content
-      ?.split('\n')
-      .filter(line => line.trim())
-      .map(tag => tag.startsWith('#') ? tag : `#${tag}`) || []
+      return caption.length > 150 ? caption.substring(0, 147) + '...' : caption;
+    };
 
     return NextResponse.json({
       success: true,
       data: {
         description,
         socialMedia: {
-          instagram: instagram.replace('Instagram:', '').trim(),
-          facebook: facebook.replace('Facebook:', '').trim(),
-          tiktok: tiktok.replace('TikTok:', '').trim(),
+          instagram: truncateCaption(instagram),
+          facebook: truncateCaption(facebook),
+          tiktok: truncateCaption(tiktok),
         },
         hashtags,
       },
-    })
+    });
   } catch (error) {
-    console.error('Error generating listing:', error)
+    console.error('Error generating listing:', error);
     return NextResponse.json(
       {
         success: false,
         message: error instanceof Error ? error.message : 'Failed to generate listing',
       },
       { status: 500 }
-    )
+    );
   }
 } 
