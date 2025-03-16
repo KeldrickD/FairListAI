@@ -7,152 +7,114 @@ import { PerformanceMetrics } from '@/components/analytics/PerformanceMetrics'
 import { EngagementChart } from '@/components/analytics/EngagementChart'
 import { LeadGeneration } from '@/components/analytics/LeadGeneration'
 import { ABTestingPanel } from '@/components/analytics/ABTestingPanel'
-import { format, subDays } from 'date-fns'
+import { format } from 'date-fns'
 import { DateRange } from 'react-day-picker'
+import { useAnalytics } from '@/hooks/useAnalytics'
+import { Toaster } from 'react-hot-toast'
+import { DashboardPreferences } from '@/components/analytics/DashboardPreferences'
+import { ExportPanel } from '@/components/analytics/ExportPanel'
+import { EmailReportForm } from '@/components/analytics/EmailReportForm'
+import { ViewSelector } from '@/components/analytics/ViewSelector'
+import { useDashboardView } from '@/hooks/useDashboardView'
 
-// Define types for the mock data
-interface DailyEngagement {
-  date: string
-  views: number
-  leads: number
-  shares: number
-  comments: number
-}
+// Loading skeleton component
+const SkeletonLoader = () => (
+  <div className="animate-pulse">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      {[...Array(4)].map((_, i) => (
+        <div key={i} className="bg-gray-200 h-24 rounded-lg"></div>
+      ))}
+    </div>
+    <div className="bg-gray-200 h-64 rounded-lg mb-6"></div>
+    <div className="bg-gray-200 h-64 rounded-lg mb-6"></div>
+    <div className="bg-gray-200 h-64 rounded-lg mb-6"></div>
+    <div className="bg-gray-200 h-64 rounded-lg"></div>
+  </div>
+);
 
-interface Lead {
-  id: string
-  name: string
-  email: string
-  phone?: string
-  source: string
-  status: 'new' | 'contacted' | 'qualified' | 'converted' | 'lost'
-  createdAt: string
-}
-
-interface ABVariant {
-  id: string
-  name: string
-  description: string
-  views: number
-  conversions: number
-  conversionRate: number
-  isControl: boolean
-}
-
-interface ABTest {
-  id: string
-  name: string
-  description: string
-  hypothesis: string
-  targetAudience?: string
-  status: 'running' | 'paused' | 'completed'
-  startDate: string
-  endDate?: string
-  variants: ABVariant[]
-}
+// Error message component
+const ErrorMessage = ({ message, onRetry }: { message: string, onRetry: () => void }) => (
+  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+    <div className="flex items-center">
+      <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+      </svg>
+      <p className="font-medium">{message}</p>
+    </div>
+    <div className="mt-3">
+      <button 
+        onClick={onRetry}
+        className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+      >
+        Try Again
+      </button>
+    </div>
+  </div>
+);
 
 const ListingAnalyticsPage: NextPage = () => {
   const router = useRouter()
   const { id } = router.query
   
-  // State for date range with non-null assertion
-  const [dateRange, setDateRange] = useState<{from: Date, to: Date}>({
-    from: subDays(new Date(), 30),
-    to: new Date(),
-  })
+  // State for active tab
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'preferences' | 'export' | 'email' | 'views'>('dashboard');
   
-  // Mock data for the analytics components
-  const mockData = {
-    views: 1245,
-    uniqueVisitors: 876,
-    averageTimeOnPage: 125, // seconds
-    bounceRate: 35.2, // percentage
-    conversionRate: 4.8, // percentage
-    engagementByDay: Array.from({ length: 30 }, (_, i) => ({
-      date: format(subDays(new Date(), 29 - i), 'yyyy-MM-dd'),
-      views: Math.floor(Math.random() * 100) + 20,
-      leads: Math.floor(Math.random() * 10) + 1,
-      shares: Math.floor(Math.random() * 5) + 1,
-      comments: Math.floor(Math.random() * 8) + 1
-    })) as DailyEngagement[],
-    leads: Array.from({ length: 25 }, (_, i) => ({
-      id: `lead-${i + 1}`,
-      name: `Lead ${i + 1}`,
-      email: `lead${i + 1}@example.com`,
-      phone: i % 3 === 0 ? `+1 555-${100 + i}` : undefined,
-      source: ['website', 'referral', 'social', 'email', 'direct'][i % 5],
-      status: ['new', 'contacted', 'qualified', 'converted', 'lost'][i % 5] as 'new' | 'contacted' | 'qualified' | 'converted' | 'lost',
-      createdAt: format(subDays(new Date(), Math.floor(Math.random() * 30)), 'yyyy-MM-dd\'T\'HH:mm:ss')
-    })) as Lead[],
-    abTests: [
-      {
-        id: 'test-1',
-        name: 'Title Optimization',
-        description: 'Testing different title formats to improve click-through rates',
-        hypothesis: 'Including price in the title will increase click-through rates',
-        targetAudience: 'All visitors',
-        status: 'completed' as const,
-        startDate: format(subDays(new Date(), 30), 'yyyy-MM-dd'),
-        endDate: format(subDays(new Date(), 15), 'yyyy-MM-dd'),
-        variants: [
-          {
-            id: 'variant-1',
-            name: 'Original Title',
-            description: 'Original listing title without price',
-            views: 450,
-            conversions: 18,
-            conversionRate: 4.0,
-            isControl: true
-          },
-          {
-            id: 'variant-2',
-            name: 'Title with Price',
-            description: 'Listing title with price included',
-            views: 462,
-            conversions: 28,
-            conversionRate: 6.1,
-            isControl: false
-          }
-        ]
-      },
-      {
-        id: 'test-2',
-        name: 'Description Length',
-        description: 'Testing if shorter descriptions lead to better engagement',
-        hypothesis: 'Shorter, more concise descriptions will lead to higher conversion rates',
-        targetAudience: 'New visitors',
-        status: 'running' as const,
-        startDate: format(subDays(new Date(), 10), 'yyyy-MM-dd'),
-        variants: [
-          {
-            id: 'variant-3',
-            name: 'Long Description',
-            description: 'Detailed property description with 300+ words',
-            views: 210,
-            conversions: 8,
-            conversionRate: 3.8,
-            isControl: true
-          },
-          {
-            id: 'variant-4',
-            name: 'Short Description',
-            description: 'Concise property description with less than 150 words',
-            views: 198,
-            conversions: 11,
-            conversionRate: 5.6,
-            isControl: false
-          }
-        ]
-      }
-    ] as ABTest[]
-  }
+  // Use our custom dashboard view hook
+  const {
+    viewType,
+    setViewType,
+    viewConfig,
+    availableViewTypes
+  } = useDashboardView();
   
-  // Filter data based on date range
-  const filteredEngagementData = mockData.engagementByDay.filter(day => {
-    const date = new Date(day.date)
-    return (!dateRange?.from || date >= dateRange.from) && 
-           (!dateRange?.to || date <= dateRange.to)
-  })
+  // Use our custom analytics hook
+  const {
+    performanceData,
+    leads,
+    abTests,
+    dateRange,
+    setDateRange,
+    isLoading,
+    isExporting,
+    isSendingEmail,
+    error,
+    refreshData,
+    exportData,
+    sendEmailReport,
+    savePreferences,
+    preferences
+  } = useAnalytics({
+    listingId: typeof id === 'string' ? id : undefined,
+    initialDateRange: {
+      from: new Date(new Date().setDate(new Date().getDate() - 30)),
+      to: new Date()
+    }
+  });
+  
+  // Email form state
+  const [email, setEmail] = useState('');
+  
+  // Handle date range change
+  const handleDateRangeChange = (range: DateRange) => {
+    if (range.from && range.to) {
+      setDateRange({ from: range.from, to: range.to });
+    }
+  };
+  
+  // Handle export
+  const handleExport = async (type: 'performance' | 'leads' | 'abtests') => {
+    await exportData(type);
+  };
+  
+  // Handle email report
+  const handleSendEmailReport = async () => {
+    if (!email) return;
+    
+    const success = await sendEmailReport(email);
+    if (success) {
+      setEmail('');
+    }
+  };
   
   if (!id || typeof id !== 'string') {
     return (
@@ -182,84 +144,245 @@ const ListingAnalyticsPage: NextPage = () => {
         <meta name="description" content="View detailed analytics for your property listing" />
       </Head>
       
+      <Toaster position="top-right" />
+      
       <MainLayout>
         <div className="container mx-auto py-8">
           <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-            <h1 className="text-2xl font-bold mb-6">Analytics Dashboard</h1>
-            <p className="mb-4">Viewing analytics for listing ID: {id}</p>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="text-sm font-medium text-gray-500 mb-1">Total Views</h3>
-                <p className="text-3xl font-bold">{mockData.views.toLocaleString()}</p>
-                <p className="text-xs text-gray-500 mt-1">{mockData.uniqueVisitors.toLocaleString()} unique visitors</p>
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+              <div>
+                <h1 className="text-2xl font-bold">Analytics Dashboard</h1>
+                <p className="text-gray-500">Viewing analytics for listing ID: {id}</p>
               </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="text-sm font-medium text-gray-500 mb-1">Leads Generated</h3>
-                <p className="text-3xl font-bold">{mockData.leads.length}</p>
-                <p className="text-xs text-gray-500 mt-1">{mockData.conversionRate}% conversion rate</p>
-              </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="text-sm font-medium text-gray-500 mb-1">Avg. Time on Page</h3>
-                <p className="text-3xl font-bold">{Math.floor(mockData.averageTimeOnPage / 60)}m {mockData.averageTimeOnPage % 60}s</p>
-                <p className="text-xs text-gray-500 mt-1">{mockData.bounceRate}% bounce rate</p>
-              </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="text-sm font-medium text-gray-500 mb-1">Social Engagement</h3>
-                <p className="text-3xl font-bold">164</p>
-                <p className="text-xs text-gray-500 mt-1">Across all platforms</p>
+              
+              <div className="mt-4 md:mt-0 flex space-x-2">
+                <button 
+                  onClick={() => setActiveTab('dashboard')}
+                  className={`px-3 py-1 rounded-md ${activeTab === 'dashboard' ? 'bg-blue-500 text-white' : 'bg-gray-100'}`}
+                >
+                  Dashboard
+                </button>
+                {viewConfig.showPreferences && (
+                  <button 
+                    onClick={() => setActiveTab('preferences')}
+                    className={`px-3 py-1 rounded-md ${activeTab === 'preferences' ? 'bg-blue-500 text-white' : 'bg-gray-100'}`}
+                  >
+                    Preferences
+                  </button>
+                )}
+                {viewConfig.showExportOptions && (
+                  <button 
+                    onClick={() => setActiveTab('export')}
+                    className={`px-3 py-1 rounded-md ${activeTab === 'export' ? 'bg-blue-500 text-white' : 'bg-gray-100'}`}
+                  >
+                    Export
+                  </button>
+                )}
+                {viewConfig.showEmailReports && (
+                  <button 
+                    onClick={() => setActiveTab('email')}
+                    className={`px-3 py-1 rounded-md ${activeTab === 'email' ? 'bg-blue-500 text-white' : 'bg-gray-100'}`}
+                  >
+                    Email Report
+                  </button>
+                )}
+                <button 
+                  onClick={() => setActiveTab('views')}
+                  className={`px-3 py-1 rounded-md ${activeTab === 'views' ? 'bg-blue-500 text-white' : 'bg-gray-100'}`}
+                >
+                  Views
+                </button>
               </div>
             </div>
-          </div>
-          
-          <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-            <h2 className="text-xl font-bold mb-4">Performance Metrics</h2>
-            <PerformanceMetrics 
-              views={mockData.views}
-              uniqueVisitors={mockData.uniqueVisitors}
-              averageTimeOnPage={mockData.averageTimeOnPage}
-              bounceRate={mockData.bounceRate}
-              conversionRate={mockData.conversionRate}
-              engagementByDay={filteredEngagementData}
-            />
-          </div>
-          
-          <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-            <h2 className="text-xl font-bold mb-4">Engagement Analysis</h2>
-            <EngagementChart 
-              engagementData={filteredEngagementData}
-              dateRange={dateRange}
-            />
-          </div>
-          
-          <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-            <h2 className="text-xl font-bold mb-4">Lead Management</h2>
-            <LeadGeneration 
-              leads={mockData.leads}
-              conversionRate={mockData.conversionRate}
-            />
-          </div>
-          
-          <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-            <h2 className="text-xl font-bold mb-4">A/B Testing</h2>
-            <ABTestingPanel 
-              tests={mockData.abTests}
-              listingId={id}
-            />
-          </div>
-          
-          <div className="bg-gray-50 p-6 rounded-lg text-center">
-            <h2 className="text-xl font-bold mb-2">Analytics Dashboard Complete!</h2>
-            <p className="text-gray-500 mb-4">
-              All components of the analytics dashboard have been successfully integrated.
-              You can now track performance metrics, engagement, leads, and A/B tests for your listings.
-            </p>
-            <button 
-              onClick={() => router.back()}
-              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-            >
-              Go Back
-            </button>
+            
+            {/* View selector tab */}
+            {activeTab === 'views' && (
+              <ViewSelector 
+                viewType={viewType}
+                setViewType={setViewType}
+                availableViewTypes={availableViewTypes}
+              />
+            )}
+            
+            {/* Refresh button and date range selector */}
+            {activeTab === 'dashboard' && (
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+                <div className="flex items-center space-x-2 mb-4 md:mb-0">
+                  <button 
+                    onClick={refreshData}
+                    disabled={isLoading}
+                    className="px-3 py-1 bg-gray-100 rounded-md hover:bg-gray-200 flex items-center"
+                  >
+                    {isLoading ? (
+                      <svg className="animate-spin h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    ) : (
+                      <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                      </svg>
+                    )}
+                    Refresh
+                  </button>
+                  <span className="text-sm text-gray-500">
+                    Last updated: {performanceData ? format(new Date(), 'MMM d, yyyy h:mm a') : 'Never'}
+                  </span>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-500">Date Range:</span>
+                  <div className="relative">
+                    <button 
+                      className="px-3 py-1 bg-gray-100 rounded-md hover:bg-gray-200 flex items-center"
+                      onClick={() => {
+                        // This would open a date picker in a real implementation
+                        // For now, we'll just use preset ranges
+                        setDateRange({
+                          from: new Date(new Date().setDate(new Date().getDate() - 30)),
+                          to: new Date()
+                        });
+                      }}
+                    >
+                      {dateRange.from && dateRange.to ? (
+                        `${format(dateRange.from, 'MMM d')} - ${format(dateRange.to, 'MMM d, yyyy')}`
+                      ) : (
+                        'Select date range'
+                      )}
+                      <svg className="h-4 w-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Dashboard content */}
+            {activeTab === 'dashboard' && (
+              <>
+                {error && <ErrorMessage message={error} onRetry={refreshData} />}
+                
+                {isLoading ? (
+                  <SkeletonLoader />
+                ) : (
+                  <>
+                    {performanceData && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                          <h3 className="text-sm font-medium text-gray-500 mb-1">Total Views</h3>
+                          <p className="text-3xl font-bold">{performanceData.views.toLocaleString()}</p>
+                          <p className="text-xs text-gray-500 mt-1">{performanceData.uniqueVisitors.toLocaleString()} unique visitors</p>
+                        </div>
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                          <h3 className="text-sm font-medium text-gray-500 mb-1">Leads Generated</h3>
+                          <p className="text-3xl font-bold">{leads?.length || 0}</p>
+                          <p className="text-xs text-gray-500 mt-1">{performanceData.conversionRate}% conversion rate</p>
+                        </div>
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                          <h3 className="text-sm font-medium text-gray-500 mb-1">Avg. Time on Page</h3>
+                          <p className="text-3xl font-bold">{Math.floor(performanceData.averageTimeOnPage / 60)}m {performanceData.averageTimeOnPage % 60}s</p>
+                          <p className="text-xs text-gray-500 mt-1">{performanceData.bounceRate}% bounce rate</p>
+                        </div>
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                          <h3 className="text-sm font-medium text-gray-500 mb-1">Social Engagement</h3>
+                          <p className="text-3xl font-bold">164</p>
+                          <p className="text-xs text-gray-500 mt-1">Across all platforms</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {viewConfig.showPerformanceMetrics && (
+                      <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+                        <h2 className="text-xl font-bold mb-4">Performance Metrics</h2>
+                        {performanceData ? (
+                          <PerformanceMetrics 
+                            views={performanceData.views}
+                            uniqueVisitors={performanceData.uniqueVisitors}
+                            averageTimeOnPage={performanceData.averageTimeOnPage}
+                            bounceRate={performanceData.bounceRate}
+                            conversionRate={performanceData.conversionRate}
+                            engagementByDay={performanceData.engagementByDay}
+                          />
+                        ) : (
+                          <p className="text-gray-500">No performance data available</p>
+                        )}
+                      </div>
+                    )}
+                    
+                    {viewConfig.showEngagementChart && (
+                      <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+                        <h2 className="text-xl font-bold mb-4">Engagement Analysis</h2>
+                        {performanceData ? (
+                          <EngagementChart 
+                            engagementData={performanceData.engagementByDay}
+                            dateRange={dateRange}
+                          />
+                        ) : (
+                          <p className="text-gray-500">No engagement data available</p>
+                        )}
+                      </div>
+                    )}
+                    
+                    {viewConfig.showLeadGeneration && (
+                      <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+                        <h2 className="text-xl font-bold mb-4">Lead Management</h2>
+                        {leads ? (
+                          <LeadGeneration 
+                            leads={leads}
+                            conversionRate={performanceData?.conversionRate || 0}
+                          />
+                        ) : (
+                          <p className="text-gray-500">No lead data available</p>
+                        )}
+                      </div>
+                    )}
+                    
+                    {viewConfig.showABTesting && (
+                      <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+                        <h2 className="text-xl font-bold mb-4">A/B Testing</h2>
+                        {abTests ? (
+                          <ABTestingPanel 
+                            tests={abTests}
+                            listingId={id}
+                          />
+                        ) : (
+                          <p className="text-gray-500">No A/B testing data available</p>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
+              </>
+            )}
+            
+            {/* Preferences tab */}
+            {activeTab === 'preferences' && viewConfig.showPreferences && (
+              <DashboardPreferences 
+                preferences={preferences}
+                onSave={savePreferences}
+                dateRange={dateRange}
+                onDateRangeChange={handleDateRangeChange}
+              />
+            )}
+            
+            {/* Export tab */}
+            {activeTab === 'export' && viewConfig.showExportOptions && (
+              <ExportPanel 
+                onExport={handleExport}
+                isExporting={isExporting}
+              />
+            )}
+            
+            {/* Email report tab */}
+            {activeTab === 'email' && viewConfig.showEmailReports && (
+              <EmailReportForm 
+                email={email}
+                setEmail={setEmail}
+                onSend={handleSendEmailReport}
+                isSending={isSendingEmail}
+              />
+            )}
           </div>
         </div>
       </MainLayout>
@@ -267,4 +390,4 @@ const ListingAnalyticsPage: NextPage = () => {
   )
 }
 
-export default ListingAnalyticsPage 
+export default ListingAnalyticsPage; 
