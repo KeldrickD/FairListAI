@@ -6,6 +6,10 @@ import { SeoOptimizer } from '@/components/listing/SeoOptimizer'
 import { SocialMediaOptimizer } from '@/components/listing/SocialMediaOptimizer'
 import { useToast } from '@/components/ui/use-toast'
 import { apiRequest } from '@/lib/api'
+import { saveListing } from '@/lib/services/listingService'
+import { useRouter } from 'next/router'
+import { sendListingCreatedEmail } from '@/lib/services/emailService'
+import { Tutorial } from '@/components/ui/Tutorial'
 
 export default function NewListing() {
   const [propertyData, setPropertyData] = useState<PropertyData | null>(null)
@@ -35,7 +39,9 @@ export default function NewListing() {
   }>>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isPosting, setIsPosting] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
   const { toast } = useToast()
+  const router = useRouter()
 
   const handleSubmit = async (data: PropertyData) => {
     setIsLoading(true)
@@ -200,6 +206,58 @@ export default function NewListing() {
     }
   }
 
+  // Add a new function to save the listing
+  const handleSaveListing = async () => {
+    if (!propertyData || !generatedListing) return;
+    
+    setIsSaving(true);
+    try {
+      // Create a title from the property details
+      const title = `${propertyData.bedrooms} Bed, ${propertyData.bathrooms} Bath ${propertyData.propertyType} in ${propertyData.location}`;
+      
+      // Prepare the listing data
+      const listingData = {
+        title,
+        location: propertyData.location,
+        price: propertyData.price,
+        bedrooms: propertyData.bedrooms,
+        bathrooms: propertyData.bathrooms,
+        description: generatedListing.description,
+        propertyType: propertyData.propertyType,
+        squareFeet: propertyData.squareFeet,
+        features: propertyData.features,
+        socialMedia: generatedListing.socialMedia,
+        hashtags: generatedListing.hashtags,
+        userId: 'demo-user-123', // In a real app, this would come from the authenticated user
+      };
+      
+      // Save the listing
+      const savedListing = await saveListing(listingData);
+      
+      // Send email notification
+      // In a real app, you would get the user's email from the session
+      await sendListingCreatedEmail('user@example.com', title);
+      
+      toast({
+        title: 'Success!',
+        description: 'Your listing has been saved to your dashboard.',
+      });
+      
+      // Redirect to dashboard after a brief delay
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 1500);
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to save listing',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-4xl font-bold text-center mb-8">Create New Listing</h1>
@@ -207,6 +265,16 @@ export default function NewListing() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div>
           <PropertyForm onSubmit={handleSubmit} isLoading={isLoading} />
+          
+          <div className="relative">
+            <Tutorial
+              id="property-form-intro"
+              title="Fill in Property Details"
+              content="Enter information about the property to generate an AI-powered listing description."
+              position="right"
+              delay={1500}
+            />
+          </div>
         </div>
 
         <div className="space-y-6">
@@ -219,6 +287,16 @@ export default function NewListing() {
                 onCopy={handleCopy}
                 onDownload={handleDownload}
               />
+              
+              <div className="relative">
+                <Tutorial
+                  id="listing-preview-intro"
+                  title="Review Your Listing"
+                  content="Here's your AI-generated listing. You can edit, copy, or download it as needed."
+                  position="left"
+                  delay={3000}
+                />
+              </div>
 
               <ComplianceChecker
                 text={generatedListing.description}
@@ -257,6 +335,22 @@ export default function NewListing() {
                 onOptimize={handleSocialMediaOptimize}
                 onPost={handleSocialMediaPost}
               />
+
+              <button
+                onClick={handleSaveListing}
+                disabled={isSaving || !generatedListing}
+                className="btn btn-primary flex items-center"
+              >
+                {isSaving ? (
+                  <>
+                    <span className="animate-spin mr-2">⟳</span> Saving...
+                  </>
+                ) : (
+                  <>
+                    <span className="mr-2">💾</span> Save to Dashboard
+                  </>
+                )}
+              </button>
             </>
           )}
         </div>

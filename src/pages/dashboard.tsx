@@ -1,60 +1,54 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { formatPrice } from '@/lib/utils';
-
-interface ListingItem {
-  id: string;
-  title: string;
-  location: string;
-  price: number;
-  bedrooms: number;
-  bathrooms: number;
-  createdAt: string;
-}
+import { getUserListings, deleteListing, ListingItem } from '@/lib/services/listingService';
+import { useToast } from '@/components/ui/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Tutorial } from '@/components/ui/Tutorial';
 
 export default function Dashboard() {
   const [listings, setListings] = useState<ListingItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
+  // Fetch listings when the component mounts
   useEffect(() => {
-    // Simulate fetching data from an API
-    setIsLoading(true);
-    setTimeout(() => {
-      // Mock data for demonstration
-      const mockListings: ListingItem[] = [
-        {
-          id: '1',
-          title: 'Modern Apartment',
-          location: 'San Francisco, CA',
-          price: 850000,
-          bedrooms: 2,
-          bathrooms: 2,
-          createdAt: '2023-03-10T12:00:00Z',
-        },
-        {
-          id: '2',
-          title: 'Urban Loft',
-          location: 'New York, NY',
-          price: 1250000,
-          bedrooms: 3,
-          bathrooms: 2,
-          createdAt: '2023-03-05T10:30:00Z',
-        },
-        {
-          id: '3',
-          title: 'Suburban Home',
-          location: 'Austin, TX',
-          price: 675000,
-          bedrooms: 4,
-          bathrooms: 3,
-          createdAt: '2023-02-28T15:45:00Z',
-        },
-      ];
-      
-      setListings(mockListings);
-      setIsLoading(false);
-    }, 1000);
+    fetchListings();
   }, []);
+
+  const fetchListings = async () => {
+    setIsLoading(true);
+    try {
+      const data = await getUserListings();
+      setListings(data);
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to load your listings. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteListing(id);
+      // Update the UI by filtering out the deleted listing
+      setListings(listings.filter(listing => listing.id !== id));
+      toast({
+        title: 'Success',
+        description: 'Listing deleted successfully.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete listing. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -69,8 +63,22 @@ export default function Dashboard() {
       </div>
       
       {isLoading ? (
-        <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="card p-4">
+              <Skeleton className="h-6 w-3/4 mb-2" />
+              <Skeleton className="h-4 w-1/2 mb-4" />
+              <Skeleton className="h-4 w-2/3 mb-4" />
+              <Skeleton className="h-20 w-full mb-4" />
+              <div className="flex justify-between">
+                <Skeleton className="h-4 w-1/4" />
+                <div className="flex space-x-2">
+                  <Skeleton className="h-8 w-16" />
+                  <Skeleton className="h-8 w-16" />
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       ) : listings.length > 0 ? (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -82,13 +90,21 @@ export default function Dashboard() {
                 <span>{listing.bedrooms} bed • {listing.bathrooms} bath</span>
                 <span>{formatPrice(listing.price)}</span>
               </div>
+              <p className="text-gray-700 mb-4 line-clamp-3">{listing.description}</p>
               <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-100">
                 <span className="text-sm text-gray-500">
                   Created {new Date(listing.createdAt).toLocaleDateString()}
                 </span>
                 <div className="flex space-x-2">
-                  <button className="btn btn-secondary text-sm">Edit</button>
-                  <button className="btn btn-secondary text-sm">Delete</button>
+                  <Link href={`/edit-listing/${listing.id}`} className="btn btn-secondary text-sm">
+                    Edit
+                  </Link>
+                  <button 
+                    onClick={() => handleDelete(listing.id)} 
+                    className="btn btn-secondary text-sm"
+                  >
+                    Delete
+                  </button>
                 </div>
               </div>
             </div>
@@ -106,6 +122,17 @@ export default function Dashboard() {
           </Link>
         </div>
       )}
+
+      {/* Replace the fixed tooltip with the Tutorial component */}
+      <div className="fixed bottom-6 right-6">
+        <Tutorial
+          id="dashboard-intro"
+          title="Welcome to Your Dashboard!"
+          content="Here you'll find all your property listings. Click 'Create New Listing' to generate your first AI-powered property description."
+          position="left"
+          delay={1000}
+        />
+      </div>
     </div>
   );
 } 
