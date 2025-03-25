@@ -9,11 +9,9 @@ const openai = new OpenAI({
   maxRetries: 3, // Retry failed requests up to 3 times
 })
 
-// Set a longer timeout for the API route
-export const config = {
-  runtime: 'edge',
-  maxDuration: 60, // Set maximum duration to 60 seconds
-}
+// Updated config format for Next.js App Router
+export const runtime = "edge";
+export const maxDuration = 60; // 60 seconds timeout
 
 export async function POST(request: Request) {
   try {
