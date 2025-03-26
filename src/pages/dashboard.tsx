@@ -11,9 +11,19 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  // Fetch listings when the component mounts
+  // Fetch listings when the component mounts and whenever the page is focused
   useEffect(() => {
     fetchListings();
+
+    // Also refresh listings when the page is focused (e.g., when navigating back)
+    const handleFocus = () => {
+      fetchListings();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
 
   const fetchListings = async () => {

@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, ReactNode } from 'react';
 import { useLocalStorage } from '@/lib/hooks/useLocalStorage';
 
 interface TutorialProps {
   id: string;
   title: string;
-  content: string | React.ReactNode;
+  content: ReactNode;
   position?: 'top' | 'right' | 'bottom' | 'left';
   className?: string;
   persistent?: boolean;
