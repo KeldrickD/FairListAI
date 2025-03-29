@@ -48,9 +48,20 @@ export default function Support() {
   ]
 
   return (
-    <Layout>
+    <Layout hideHeader={true}>
       <div className="container mx-auto py-8 px-4">
-        <h1 className="text-2xl font-bold mb-6">Help & Support</h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Help & Support</h1>
+          <div className="flex items-center">
+            <span className="font-medium mr-3">Trial - 2 listings remaining</span>
+            <button 
+              onClick={() => router.push('/premium')}
+              className="px-3 py-1 rounded-md bg-[#2F5DE3] text-white text-sm"
+            >
+              Upgrade
+            </button>
+          </div>
+        </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="md:col-span-1">

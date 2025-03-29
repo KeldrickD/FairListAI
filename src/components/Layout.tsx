@@ -8,9 +8,10 @@ import {
 
 interface LayoutProps extends PropsWithChildren {
   hideNav?: boolean
+  hideHeader?: boolean
 }
 
-export default function Layout({ children, hideNav = false }: LayoutProps) {
+export default function Layout({ children, hideNav = false, hideHeader = false }: LayoutProps) {
   const router = useRouter()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   
@@ -154,25 +155,27 @@ export default function Layout({ children, hideNav = false }: LayoutProps) {
       
       {/* Main content */}
       <div className="flex-1 flex flex-col">
-        <header className="bg-white border-b h-16 flex items-center justify-between px-4 lg:px-6">
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="rounded-md p-1 hover:bg-gray-100 lg:hidden"
-          >
-            <Menu className="h-6 w-6" />
-          </button>
-          
-          <div className="flex items-center space-x-4">
-            <div className="relative">
-              <div className="flex items-center">
-                <span className="font-medium">Trial - 2 listings remaining</span>
-                <Link href="/premium" className="ml-2 px-3 py-1 rounded-md bg-[#2F5DE3] text-white text-sm">
-                  Upgrade
-                </Link>
+        {!hideHeader && (
+          <header className="bg-white border-b h-16 flex items-center justify-between px-4 lg:px-6">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="rounded-md p-1 hover:bg-gray-100 lg:hidden"
+            >
+              <Menu className="h-6 w-6" />
+            </button>
+            
+            <div className="flex items-center space-x-4">
+              <div className="relative">
+                <div className="flex items-center">
+                  <span className="font-medium">Trial - 2 listings remaining</span>
+                  <Link href="/premium" className="ml-2 px-3 py-1 rounded-md bg-[#2F5DE3] text-white text-sm">
+                    Upgrade
+                  </Link>
+                </div>
               </div>
             </div>
-          </div>
-        </header>
+          </header>
+        )}
         
         <main className="flex-1">
           {children}
