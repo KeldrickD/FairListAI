@@ -1,180 +1,183 @@
-import React from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/router';
+import { PropsWithChildren, useState } from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/router'
+import { 
+  Home, FileText, BarChart2, Settings, Menu, X, LogOut, 
+  PlusCircle, User, CreditCard, Sparkles, MessageSquare
+} from 'lucide-react'
 
-export default function Layout({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
-  const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+interface LayoutProps extends PropsWithChildren {
+  hideNav?: boolean
+}
 
-  // Check if the current route matches the passed href
-  const isActive = (href: string) => router.pathname === href;
-
+export default function Layout({ children, hideNav = false }: LayoutProps) {
+  const router = useRouter()
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  
+  const isActive = (path: string) => {
+    return router.pathname === path || router.pathname.startsWith(`${path}/`)
+  }
+  
+  // Placeholder for user auth - in a real app this would check auth state
+  const isLoggedIn = router.pathname !== '/login' && router.pathname !== '/register'
+  
+  // If navigation is hidden (e.g., on login/register pages)
+  if (hideNav) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        {children}
+      </div>
+    )
+  }
+  
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className="bg-white shadow-sm">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16 items-center">
-            <div className="flex items-center">
-              <Link href="/" className="flex-shrink-0 flex items-center">
-                <span className="text-2xl font-bold text-indigo-600">Listing Genie</span>
-              </Link>
-            </div>
-            
-            {/* Desktop navigation */}
-            <nav className="hidden md:flex space-x-8">
-              <Link 
-                href="/dashboard" 
-                className={`px-3 py-2 rounded-md text-sm font-medium ${
-                  isActive('/dashboard') 
-                    ? 'text-indigo-600 bg-indigo-50' 
-                    : 'text-gray-700 hover:text-indigo-600'
-                }`}
-              >
-                Dashboard
-              </Link>
-              <Link 
-                href="/new-listing" 
-                className={`px-3 py-2 rounded-md text-sm font-medium ${
-                  isActive('/new-listing') 
-                    ? 'text-indigo-600 bg-indigo-50' 
-                    : 'text-gray-700 hover:text-indigo-600'
-                }`}
-              >
-                Create Listing
-              </Link>
-              <Link 
-                href="/premium" 
-                className={`px-3 py-2 rounded-md text-sm font-medium ${
-                  isActive('/premium') 
-                    ? 'text-indigo-600 bg-indigo-50' 
-                    : 'text-gray-700 hover:text-indigo-600'
-                }`}
-              >
-                Premium
-              </Link>
-            </nav>
-            
-            {/* User menu for desktop */}
-            <div className="hidden md:flex items-center">
-              <Link 
-                href="/login" 
-                className="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Log in
-              </Link>
-              <Link 
-                href="/register" 
-                className="ml-4 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-              >
-                Sign up
-              </Link>
-            </div>
-            
-            {/* Mobile menu button */}
-            <div className="md:hidden">
-              <button
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-indigo-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500"
-              >
-                <span className="sr-only">Open main menu</span>
-                <svg
-                  className="h-6 w-6"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  aria-hidden="true"
-                >
-                  {isMenuOpen ? (
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  ) : (
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                  )}
-                </svg>
-              </button>
-            </div>
-          </div>
+    <div className="flex min-h-screen bg-[#FAFAF9]">
+      {/* Mobile sidebar backdrop */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 z-20 bg-black bg-opacity-50 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        ></div>
+      )}
+      
+      {/* Sidebar */}
+      <aside 
+        className={`fixed top-0 left-0 z-30 h-screen w-64 transform bg-white shadow-lg transition-transform lg:translate-x-0 lg:static lg:z-0 ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        <div className="flex h-16 items-center justify-between px-4 border-b">
+          <Link href="/" className="flex items-center">
+            <Sparkles className="h-6 w-6 text-[#2F5DE3]" />
+            <span className="ml-2 text-xl font-bold text-[#2F5DE3]">Listing Genie</span>
+          </Link>
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="rounded-md p-1 hover:bg-gray-100 lg:hidden"
+          >
+            <X className="h-5 w-5" />
+          </button>
         </div>
         
-        {/* Mobile menu */}
-        {isMenuOpen && (
-          <div className="md:hidden">
-            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-              <Link 
-                href="/dashboard" 
-                className={`block px-3 py-2 rounded-md text-base font-medium ${
-                  isActive('/dashboard') 
-                    ? 'text-indigo-600 bg-indigo-50' 
-                    : 'text-gray-700 hover:text-indigo-600'
-                }`}
-              >
-                Dashboard
-              </Link>
-              <Link 
-                href="/new-listing" 
-                className={`block px-3 py-2 rounded-md text-base font-medium ${
-                  isActive('/new-listing') 
-                    ? 'text-indigo-600 bg-indigo-50' 
-                    : 'text-gray-700 hover:text-indigo-600'
-                }`}
-              >
-                Create Listing
-              </Link>
-              <Link 
-                href="/premium" 
-                className={`block px-3 py-2 rounded-md text-base font-medium ${
-                  isActive('/premium') 
-                    ? 'text-indigo-600 bg-indigo-50' 
-                    : 'text-gray-700 hover:text-indigo-600'
-                }`}
-              >
-                Premium
-              </Link>
-            </div>
-            <div className="pt-4 pb-3 border-t border-gray-200">
-              <div className="px-2 space-y-1">
-                <Link 
-                  href="/login" 
-                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-indigo-600"
-                >
-                  Log in
-                </Link>
-                <Link 
-                  href="/register" 
-                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-indigo-600"
-                >
-                  Sign up
+        <nav className="px-4 py-6">
+          <div className="space-y-1">
+            <p className="px-3 text-xs font-semibold uppercase text-gray-500">Dashboard</p>
+            
+            <Link
+              href="/dashboard"
+              className={`flex items-center px-3 py-2 rounded-lg ${
+                isActive('/dashboard') 
+                  ? 'bg-[#C7BAF5] bg-opacity-20 text-[#2F5DE3]' 
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <Home className="h-5 w-5 mr-3" />
+              <span>Home</span>
+            </Link>
+            
+            <Link
+              href="/new-listing"
+              className={`flex items-center px-3 py-2 rounded-lg ${
+                isActive('/new-listing') 
+                  ? 'bg-[#C7BAF5] bg-opacity-20 text-[#2F5DE3]' 
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <PlusCircle className="h-5 w-5 mr-3" />
+              <span>New Listing</span>
+            </Link>
+            
+            <Link
+              href="/analytics"
+              className={`flex items-center px-3 py-2 rounded-lg ${
+                isActive('/analytics') 
+                  ? 'bg-[#C7BAF5] bg-opacity-20 text-[#2F5DE3]' 
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <BarChart2 className="h-5 w-5 mr-3" />
+              <span>Analytics</span>
+            </Link>
+          </div>
+          
+          <div className="mt-6 space-y-1">
+            <p className="px-3 text-xs font-semibold uppercase text-gray-500">Account</p>
+            
+            <Link
+              href="/account"
+              className={`flex items-center px-3 py-2 rounded-lg ${
+                isActive('/account') 
+                  ? 'bg-[#C7BAF5] bg-opacity-20 text-[#2F5DE3]' 
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <User className="h-5 w-5 mr-3" />
+              <span>Profile</span>
+            </Link>
+            
+            <Link
+              href="/premium"
+              className={`flex items-center px-3 py-2 rounded-lg ${
+                isActive('/premium') 
+                  ? 'bg-[#C7BAF5] bg-opacity-20 text-[#2F5DE3]' 
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <CreditCard className="h-5 w-5 mr-3" />
+              <span>Subscription</span>
+            </Link>
+            
+            <Link
+              href="/support"
+              className={`flex items-center px-3 py-2 rounded-lg ${
+                isActive('/support') 
+                  ? 'bg-[#C7BAF5] bg-opacity-20 text-[#2F5DE3]' 
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <MessageSquare className="h-5 w-5 mr-3" />
+              <span>Support</span>
+            </Link>
+          </div>
+          
+          <div className="absolute bottom-0 left-0 right-0 p-4 border-t">
+            <button 
+              onClick={() => router.push('/login')}
+              className="flex w-full items-center px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+            >
+              <LogOut className="h-5 w-5 mr-3" />
+              <span>Sign Out</span>
+            </button>
+          </div>
+        </nav>
+      </aside>
+      
+      {/* Main content */}
+      <div className="flex-1 flex flex-col">
+        <header className="bg-white border-b h-16 flex items-center justify-between px-4 lg:px-6">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="rounded-md p-1 hover:bg-gray-100 lg:hidden"
+          >
+            <Menu className="h-6 w-6" />
+          </button>
+          
+          <div className="flex items-center space-x-4">
+            <div className="relative">
+              <div className="flex items-center">
+                <span className="font-medium">Trial - 2 listings remaining</span>
+                <Link href="/premium" className="ml-2 px-3 py-1 rounded-md bg-[#2F5DE3] text-white text-sm">
+                  Upgrade
                 </Link>
               </div>
             </div>
           </div>
-        )}
-      </header>
-      
-      <main className="flex-grow">
-        {children}
-      </main>
-      
-      <footer className="bg-gray-50 border-t border-gray-200">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex flex-col items-center md:flex-row md:justify-between">
-            <div className="text-center md:text-left mb-4 md:mb-0">
-              <p className="text-gray-500">© {new Date().getFullYear()} Listing Genie. All rights reserved.</p>
-            </div>
-            <div className="flex space-x-6">
-              <a href="#" className="text-gray-500 hover:text-indigo-600">
-                Privacy Policy
-              </a>
-              <a href="#" className="text-gray-500 hover:text-indigo-600">
-                Terms of Service
-              </a>
-              <a href="#" className="text-gray-500 hover:text-indigo-600">
-                Contact Us
-              </a>
-            </div>
-          </div>
-        </div>
-      </footer>
+        </header>
+        
+        <main className="flex-1">
+          {children}
+        </main>
+      </div>
     </div>
-  );
+  )
 } 

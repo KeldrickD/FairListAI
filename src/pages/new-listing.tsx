@@ -14,14 +14,16 @@ import { Tutorial } from '@/components/ui/Tutorial'
 export default function NewListing() {
   const [propertyData, setPropertyData] = useState<PropertyData | null>(null)
   const [generatedListing, setGeneratedListing] = useState<{
+    headlines?: string[]
     description: string
     socialMedia: {
       instagram: string
       facebook: string
-      tiktok: string
       linkedin?: string
       twitter?: string
     }
+    email?: string
+    neighborhood?: string
     hashtags: string[]
     seoOptimized?: boolean
     seoTitle?: string
@@ -74,7 +76,7 @@ export default function NewListing() {
       const seoResponse = await apiRequest('/api/seo/analyze', {
         method: 'POST',
         body: JSON.stringify({
-          title: `${data.bedrooms} Bed, ${data.bathrooms} Bath ${data.propertyType} in ${data.location}`,
+          title: listingResponse.data.headlines ? listingResponse.data.headlines[0] : `${data.bedrooms} Bed, ${data.bathrooms} Bath ${data.propertyType} in ${data.location}`,
           description: listingResponse.data.description,
         }),
       })
@@ -158,7 +160,6 @@ export default function NewListing() {
   const handleSocialMediaOptimize = (optimizedSocialMedia: {
     instagram: string
     facebook: string
-    tiktok: string
     linkedin: string
     twitter: string
     hashtags: string[]
@@ -170,7 +171,6 @@ export default function NewListing() {
       socialMedia: {
         instagram: optimizedSocialMedia.instagram,
         facebook: optimizedSocialMedia.facebook,
-        tiktok: optimizedSocialMedia.tiktok,
         linkedin: optimizedSocialMedia.linkedin,
         twitter: optimizedSocialMedia.twitter
       },
@@ -212,8 +212,10 @@ export default function NewListing() {
     
     setIsSaving(true);
     try {
-      // Create a title from the property details
-      const title = `${propertyData.bedrooms} Bed, ${propertyData.bathrooms} Bath ${propertyData.propertyType} in ${propertyData.location}`;
+      // Create a title from the property details or use the first headline
+      const title = generatedListing.headlines && generatedListing.headlines.length > 0 
+        ? generatedListing.headlines[0] 
+        : `${propertyData.bedrooms} Bed, ${propertyData.bathrooms} Bath ${propertyData.propertyType} in ${propertyData.location}`;
       
       // Prepare the listing data
       const listingData = {
@@ -227,6 +229,8 @@ export default function NewListing() {
         squareFeet: propertyData.squareFeet,
         features: propertyData.features,
         socialMedia: generatedListing.socialMedia,
+        email: generatedListing.email,
+        neighborhood: generatedListing.neighborhood,
         hashtags: generatedListing.hashtags,
         userId: 'demo-user-123', // In a real app, this would come from the authenticated user
       };
@@ -259,99 +263,106 @@ export default function NewListing() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-4xl font-bold text-center mb-8">Create New Listing</h1>
+    <div className="container mx-auto py-6 px-4">
+      <h1 className="text-3xl font-bold mb-8">Create New Listing</h1>
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="lg:col-span-5">
           <PropertyForm onSubmit={handleSubmit} isLoading={isLoading} />
-          
-          <div className="relative">
-            <Tutorial
-              id="property-form-intro"
-              title="Fill in Property Details"
-              content="Enter information about the property to generate an AI-powered listing description."
-              position="right"
-              delay={1500}
-            />
-          </div>
         </div>
-
-        <div className="space-y-6">
-          {generatedListing && propertyData && (
-            <>
-              <ListingPreview
-                propertyData={propertyData}
-                generatedListing={generatedListing}
-                onEdit={() => setGeneratedListing(null)}
+        
+        <div className="lg:col-span-7">
+          {isLoading ? (
+            <ListingPreview 
+              description=""
+              isLoading={true}
+              onCopy={handleCopy}
+              onDownload={handleDownload}
+            />
+          ) : generatedListing ? (
+            <div className="space-y-6">
+              <ListingPreview 
+                description={generatedListing.description}
+                headlines={generatedListing.headlines}
+                socialMedia={generatedListing.socialMedia}
+                email={generatedListing.email}
+                neighborhood={generatedListing.neighborhood}
+                hashtags={generatedListing.hashtags}
                 onCopy={handleCopy}
                 onDownload={handleDownload}
               />
               
-              <div className="relative">
-                <Tutorial
-                  id="listing-preview-intro"
-                  title="Review Your Listing"
-                  content="Here's your AI-generated listing. You can edit, copy, or download it as needed."
-                  position="left"
-                  delay={3000}
+              {complianceIssues.length > 0 && (
+                <ComplianceChecker
+                  issues={complianceIssues}
+                  text={generatedListing.description}
+                  onChange={(text) => setGeneratedListing({...generatedListing, description: text })}
                 />
-              </div>
-
-              <ComplianceChecker
-                text={generatedListing.description}
-                issues={complianceIssues}
-              />
-
-              <SeoOptimizer
-                metrics={seoMetrics}
-                keywords={[
-                  `${propertyData.bedrooms} bed`,
-                  `${propertyData.bathrooms} bath`,
-                  propertyData.propertyType,
-                  propertyData.location,
-                ]}
-                title={`${propertyData.bedrooms} Bed, ${propertyData.bathrooms} Bath ${propertyData.propertyType} in ${propertyData.location}`}
-                description={generatedListing.description}
-                onOptimize={(optimizedData) => {
-                  // Create a new listing with optimized SEO content
-                  setGeneratedListing({
-                    ...generatedListing,
-                    description: optimizedData.description,
-                    seoOptimized: true,
-                    seoTitle: optimizedData.title
-                  });
-                  
-                  toast({
-                    title: 'SEO Optimized!',
-                    description: 'Your listing has been optimized for better search engine visibility.',
-                  });
-                }}
-              />
+              )}
               
-              <SocialMediaOptimizer
-                propertyData={propertyData}
-                generatedListing={generatedListing}
+              <div className="flex flex-col sm:flex-row gap-4">
+                <button
+                  onClick={handleSaveListing}
+                  disabled={isSaving}
+                  className="flex-1 px-4 py-2 bg-[#2F5DE3] text-white rounded-md hover:bg-indigo-700 transition-colors disabled:opacity-50"
+                >
+                  {isSaving ? 'Saving...' : 'Save Listing'}
+                </button>
+                
+                <button
+                  onClick={handleDownload}
+                  className="flex-1 px-4 py-2 border border-[#2F5DE3] text-[#2F5DE3] rounded-md hover:bg-indigo-50 transition-colors"
+                >
+                  Download PDF
+                </button>
+              </div>
+              
+              <SocialMediaOptimizer 
+                content={generatedListing.description}
                 onOptimize={handleSocialMediaOptimize}
                 onPost={handleSocialMediaPost}
+                isPosting={isPosting}
               />
-
-              <button
-                onClick={handleSaveListing}
-                disabled={isSaving || !generatedListing}
-                className="btn btn-primary flex items-center"
-              >
-                {isSaving ? (
-                  <>
-                    <span className="animate-spin mr-2">⟳</span> Saving...
-                  </>
-                ) : (
-                  <>
-                    <span className="mr-2">💾</span> Save to Dashboard
-                  </>
-                )}
-              </button>
-            </>
+              
+              <SeoOptimizer 
+                title={generatedListing.headlines ? generatedListing.headlines[0] : ''}
+                description={generatedListing.description}
+                metrics={seoMetrics}
+                onOptimize={(optimized) => {
+                  setGeneratedListing({
+                    ...generatedListing,
+                    description: optimized.description,
+                    seoOptimized: true,
+                    seoTitle: optimized.title
+                  })
+                }}
+              />
+            </div>
+          ) : (
+            <div className="border rounded-lg p-8 text-center text-gray-500">
+              <h2 className="text-xl font-semibold mb-2">Enter property details</h2>
+              <p>Fill out the form on the left to generate your listing.</p>
+              <Tutorial
+                steps={[
+                  {
+                    title: 'Enter property details',
+                    content: 'Fill in information about your property including features and amenities.'
+                  },
+                  {
+                    title: 'Generate listing',
+                    content: 'Click "Generate Listing" to create your AI-powered property description.'
+                  },
+                  {
+                    title: 'Review and edit',
+                    content: 'Check the generated content and make any necessary edits.'
+                  },
+                  {
+                    title: 'Download or share',
+                    content: 'Save your listing or download it as a PDF for your marketing materials.'
+                  }
+                ]}
+              />
+            </div>
           )}
         </div>
       </div>

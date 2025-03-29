@@ -1,15 +1,27 @@
-# FairListAI
+# Listing Genie
 
-FairListAI is a modern web application designed for real estate professionals to generate Fair Housing compliant property listings. It uses AI to help real estate agents create effective, compliant, and optimized property listings.
+Listing Genie is a modern web application designed for real estate professionals to generate engaging, Fair Housing compliant property listings. It uses AI to help real estate agents save time and create more effective listings with just a few clicks.
 
 ## Features
 
-- **AI-powered Listing Generation**: Create professional property listings with just a few clicks
+- **AI-powered Listing Generation**: Create professional property descriptions in seconds
+- **Catchy Headlines**: Generate attention-grabbing headlines that highlight key property features
 - **Fair Housing Compliance**: Automatically check listings for potential Fair Housing violations
-- **SEO Optimization**: Analyze and enhance listings for better search engine visibility
-- **Social Media Integration**: Generate platform-specific content for social media promotion
+- **Social Media Content**: Generate platform-specific content for Instagram, Facebook, LinkedIn, and Twitter
+- **Email Templates**: Create professional email announcements for your listings
+- **Neighborhood Insights**: Add relevant neighborhood highlights without demographic assumptions
 - **Hashtag Suggestions**: Get relevant hashtags for your property listings
 - **PDF Export**: Export your listings as professional PDF documents
+
+## Pricing
+
+- **Basic Plan**: $29/month - 20 listings/month, basic features
+- **Pro Plan**: $59/month - 50 listings/month, advanced features and neighborhood highlights 
+- **Business Plan**: $99/month - Unlimited listings, team access, analytics dashboard
+
+Add-ons:
+- **Market Analysis**: $19/month - Get market insights and pricing suggestions
+- **AI Copywriting Assistant**: $15/month - Access advanced copywriting features
 
 ## Screenshots
 
@@ -27,8 +39,8 @@ FairListAI is a modern web application designed for real estate professionals to
 
 1. Clone the repository
    ```
-   git clone https://github.com/yourusername/fairlistai.git
-   cd fairlistai
+   git clone https://github.com/yourusername/listing-genie.git
+   cd listing-genie
    ```
 
 2. Install dependencies
@@ -51,38 +63,28 @@ FairListAI is a modern web application designed for real estate professionals to
 
 ### Creating Listings
 
-1. Navigate to "Create Listing" in the dashboard
+1. Navigate to "New Listing" in the dashboard
 2. Fill in your property details
 3. Click "Generate Listing"
-4. Review, edit, and save your AI-generated listing
+4. Review your generated listing, headlines, social media content, and more
+5. Save or download your content
 
 ### Checking Compliance
 
-1. Go to the "Compliance Checker" page
-2. Paste your listing content
-3. Click "Check Compliance"
-4. Review any potential Fair Housing issues
-5. Use "Auto-Fix Issues" for quick compliance corrections
+1. The system automatically checks for Fair Housing compliance
+2. Review any potential issues flagged by the system
+3. Use suggestions to fix potential violations
 
-### Optimizing for SEO
+### Optimizing for Social Media
 
-1. Visit the "SEO Analyzer" page
-2. Enter your listing content
-3. Add target keywords (optional)
-4. Click "Analyze SEO"
-5. Review recommendations and scoring
-6. Use "Optimize Listing" to enhance your content
-
-### Managing Listings
-
-1. View all your listings on the "My Listings" page
-2. Filter and sort by various criteria
-3. Edit, copy, or download any listing
+1. Use the generated platform-specific content for Instagram, Facebook, LinkedIn, and Twitter
+2. Copy and paste the content directly into your social media platforms
+3. Use the suggested hashtags to increase visibility
 
 ## Project Structure
 
 ```
-fairlistai/
+listing-genie/
 ├── components/        # UI components
 ├── pages/             # Next.js pages
 │   ├── api/           # API routes
@@ -113,4 +115,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Acknowledgments
 
 - OpenAI for providing the AI models
-- All contributors who have helped build and improve FairListAI 
+- All contributors who have helped build and improve Listing Genie 
