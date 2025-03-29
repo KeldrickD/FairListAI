@@ -43,8 +43,8 @@ export default function Layout({ children, hideNav = false, hideHeader = false }
       
       {/* Sidebar */}
       <aside 
-        className={`fixed top-0 left-0 z-30 h-screen w-64 transform bg-white shadow-lg transition-transform lg:translate-x-0 lg:static lg:z-0 ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        className={`bg-white shadow-lg transition-transform w-64 lg:translate-x-0 ${
+          sidebarOpen ? 'fixed left-0 top-0 z-30 h-screen translate-x-0' : 'hidden lg:block'
         }`}
       >
         <div className="flex h-16 items-center justify-between px-4 border-b">
