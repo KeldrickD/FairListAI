@@ -6,7 +6,7 @@ import { NotificationProvider } from '@/contexts/NotificationContext';
 import '@/styles/globals.css';
 
 // Define pages that manage their own layout
-const pagesWithLayout = ['/account', '/support'];
+const pagesWithLayout = ['/account', '/support', '/premium'];
 
 export default function App({ Component, pageProps }: AppProps) {
   // Check if current page manages its own layout

@@ -1,10 +1,18 @@
-import { PropsWithChildren, useState } from 'react'
+import { PropsWithChildren, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { 
   Home, FileText, BarChart2, Settings, Menu, X, LogOut, 
   PlusCircle, User, CreditCard, Sparkles, MessageSquare
 } from 'lucide-react'
+
+// Add subscription interface
+interface Subscription {
+  plan: string;
+  billingCycle: string;
+  startDate: string;
+  status: string;
+}
 
 interface LayoutProps extends PropsWithChildren {
   hideNav?: boolean
@@ -14,6 +22,17 @@ interface LayoutProps extends PropsWithChildren {
 export default function Layout({ children, hideNav = false, hideHeader = false }: LayoutProps) {
   const router = useRouter()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [subscription, setSubscription] = useState<Subscription | null>(null)
+  
+  // Check for subscription on component mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedSubscription = localStorage.getItem('userSubscription');
+      if (savedSubscription) {
+        setSubscription(JSON.parse(savedSubscription));
+      }
+    }
+  }, []);
   
   const isActive = (path: string) => {
     return router.pathname === path || router.pathname.startsWith(`${path}/`)
@@ -32,6 +51,11 @@ export default function Layout({ children, hideNav = false, hideHeader = false }
       });
       
       if (response.ok) {
+        // Clear any subscription data
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('userSubscription');
+        }
+        
         // Redirect to login page after successful logout
         router.push('/login');
       } else {
@@ -187,10 +211,21 @@ export default function Layout({ children, hideNav = false, hideHeader = false }
             <div className="flex items-center space-x-4">
               <div className="relative">
                 <div className="flex items-center">
-                  <span className="font-medium">Trial - 2 listings remaining</span>
-                  <Link href="/premium" className="ml-2 px-3 py-1 rounded-md bg-[#2F5DE3] text-white text-sm">
-                    Upgrade
-                  </Link>
+                  {subscription ? (
+                    <div className="flex items-center">
+                      <span className="font-medium text-green-600">{subscription.plan} Plan Active</span>
+                      <Link href="/account" className="ml-2 px-3 py-1 rounded-md bg-gray-100 text-gray-800 text-sm">
+                        Manage
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="flex items-center">
+                      <span className="font-medium">Trial - 2 listings remaining</span>
+                      <Link href="/premium" className="ml-2 px-3 py-1 rounded-md bg-[#2F5DE3] text-white text-sm">
+                        Upgrade
+                      </Link>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

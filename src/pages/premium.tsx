@@ -138,6 +138,17 @@ export default function Premium({ user }: { user: User | null }) {
         // Close checkout form
         setIsCheckoutOpen(false);
         
+        // In a real app, this would save to the database
+        // Here we'll simulate it with localStorage
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('userSubscription', JSON.stringify({
+            plan: selectedPlan,
+            billingCycle: billingCycle,
+            startDate: new Date().toISOString(),
+            status: 'active'
+          }));
+        }
+        
         // Show success notification
         showNotification({
           type: 'success',
@@ -291,7 +302,7 @@ export default function Premium({ user }: { user: User | null }) {
   ];
 
   return (
-    <Layout>
+    <Layout hideHeader={false}>
       <div className="container mx-auto px-4 py-8">
         <div className="text-center mb-16">
           <h1 className="text-4xl font-bold mb-4">Premium Plans</h1>

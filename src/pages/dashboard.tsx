@@ -5,20 +5,52 @@ import { getUserListings, deleteListing, ListingItem } from '@/lib/services/list
 import { useToast } from '@/components/ui/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tutorial } from '@/components/ui/Tutorial';
-import { requireAuth } from '@/lib/auth';
+import { requireAuth, getUserFromRequest } from '@/lib/auth';
+import { Sparkles, Award, Clock } from 'lucide-react';
 
-export default function Dashboard() {
+// Define a type for subscription
+interface Subscription {
+  plan: string;
+  billingCycle: string;
+  startDate: string;
+  status: string;
+}
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
+export default function Dashboard({ user }: { user: User | null }) {
   const [listings, setListings] = useState<ListingItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [subscription, setSubscription] = useState<Subscription | null>(null);
   const { toast } = useToast();
 
   // Fetch listings when the component mounts and whenever the page is focused
   useEffect(() => {
     fetchListings();
+    
+    // Check for subscription in localStorage
+    if (typeof window !== 'undefined') {
+      const savedSubscription = localStorage.getItem('userSubscription');
+      if (savedSubscription) {
+        setSubscription(JSON.parse(savedSubscription));
+      }
+    }
 
     // Also refresh listings when the page is focused (e.g., when navigating back)
     const handleFocus = () => {
       fetchListings();
+      // Also refresh subscription data
+      if (typeof window !== 'undefined') {
+        const savedSubscription = localStorage.getItem('userSubscription');
+        if (savedSubscription) {
+          setSubscription(JSON.parse(savedSubscription));
+        }
+      }
     };
 
     window.addEventListener('focus', handleFocus);
@@ -72,6 +104,50 @@ export default function Dashboard() {
           Create New Listing
         </Link>
       </div>
+      
+      {subscription ? (
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 mb-6 border border-blue-100 flex items-center">
+          <div className="bg-blue-100 rounded-full p-2 mr-4">
+            <Award className="text-blue-600 h-6 w-6" />
+          </div>
+          <div>
+            <h3 className="font-medium text-blue-800">
+              {subscription.plan} Plan Active
+            </h3>
+            <p className="text-sm text-blue-600">
+              Your subscription is active. Enjoy all the premium features!
+            </p>
+          </div>
+          <div className="ml-auto">
+            <Link
+              href="/account"
+              className="text-blue-600 text-sm font-medium hover:text-blue-800"
+            >
+              Manage Subscription
+            </Link>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg p-4 mb-6 border border-amber-100 flex items-center">
+          <div className="bg-amber-100 rounded-full p-2 mr-4">
+            <Clock className="text-amber-600 h-6 w-6" />
+          </div>
+          <div>
+            <h3 className="font-medium text-amber-800">Free Trial Mode</h3>
+            <p className="text-sm text-amber-600">
+              You're using the free trial version. Upgrade to unlock all features.
+            </p>
+          </div>
+          <div className="ml-auto">
+            <Link
+              href="/premium"
+              className="text-amber-600 text-sm font-medium hover:text-amber-800"
+            >
+              Upgrade Now
+            </Link>
+          </div>
+        </div>
+      )}
       
       {isLoading ? (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -134,16 +210,18 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Replace the fixed tooltip with the Tutorial component */}
-      <div className="fixed bottom-6 right-6">
-        <Tutorial
-          id="dashboard-intro"
-          title="Welcome to Your Dashboard!"
-          content="Here you'll find all your property listings. Click 'Create New Listing' to generate your first AI-powered property description."
-          position="left"
-          delay={1000}
-        />
-      </div>
+      {/* Only show the tutorial if there's no subscription */}
+      {!subscription && (
+        <div className="fixed bottom-6 right-6">
+          <Tutorial
+            id="dashboard-intro"
+            title="Welcome to Your Dashboard!"
+            content="Here you'll find all your property listings. Click 'Create New Listing' to generate your first AI-powered property description."
+            position="left"
+            delay={1000}
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -156,8 +234,13 @@ export const getServerSideProps = async (context) => {
     return authResult;
   }
   
+  // Get user info from the session
+  const user = getUserFromRequest(context.req);
+  
   // Otherwise, return the props
   return {
-    props: {}
+    props: {
+      user: user || null
+    }
   };
 } 
