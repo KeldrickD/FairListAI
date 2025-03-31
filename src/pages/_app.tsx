@@ -2,6 +2,7 @@ import React from 'react';
 import { AppProps } from 'next/app';
 import { Toaster } from '@/components/ui/toaster';
 import Layout from '@/components/Layout';
+import { NotificationProvider } from '@/contexts/NotificationContext';
 import '@/styles/globals.css';
 
 // Define pages that manage their own layout
@@ -13,7 +14,7 @@ export default function App({ Component, pageProps }: AppProps) {
   const usesOwnLayout = pagesWithLayout.includes(pathname);
 
   return (
-    <>
+    <NotificationProvider>
       {usesOwnLayout ? (
         <Component {...pageProps} />
       ) : (
@@ -22,6 +23,6 @@ export default function App({ Component, pageProps }: AppProps) {
         </Layout>
       )}
       <Toaster />
-    </>
+    </NotificationProvider>
   );
 } 
