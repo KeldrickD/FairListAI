@@ -4,13 +4,10 @@ import { formatPrice, hasFeature, getUserFeatures, Subscription } from '@/lib/ut
 import { getUserListings, deleteListing, ListingItem } from '@/lib/services/listingService';
 import { useToast } from '@/components/ui/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import Tutorial from '@/components/ui/Tutorial';
+import { Tutorial } from '@/components/ui/Tutorial';
 import { requireAuth, getUserFromRequest } from '@/lib/auth';
 import dynamic from 'next/dynamic';
 import { Sparkles } from 'lucide-react';
-import ContentCalendar from '@/components/ContentCalendar';
-import TeamManagement from '@/components/TeamManagement';
-import DedicatedManager from '@/components/DedicatedManager';
 
 // Import Lucide icons with dynamic imports to fix the JSX errors
 const AwardIcon = dynamic(() => import('lucide-react').then(mod => mod.Award), { ssr: false });
