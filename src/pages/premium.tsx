@@ -6,16 +6,15 @@ import Layout from '@/components/Layout';
 import { GetServerSideProps } from 'next';
 import { requireAuth, getUserFromRequest } from '@/lib/auth';
 import { useNotification } from '@/contexts/NotificationContext';
+import { Subscription } from '@/lib/utils';
 
 interface PricingTier {
   name: string;
-  price: string;
+  price: { monthly: number; annually: number };
   description: string;
   features: string[];
-  buttonText: string;
-  buttonLink: string;
-  highlighted?: boolean;
-  annualPrice?: string;
+  cta: string;
+  highlight?: boolean;
 }
 
 interface Testimonial {
@@ -25,6 +24,14 @@ interface Testimonial {
   content: string;
   rating: number;
   image: string;
+}
+
+interface Addon {
+  id: string;
+  name: string;
+  price: number;
+  description: string;
+  features: string[];
 }
 
 interface CheckoutFormData {
@@ -50,6 +57,7 @@ export default function Premium({ user }: { user: User | null }) {
   const router = useRouter();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annually'>('monthly');
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const [selectedAddons, setSelectedAddons] = useState<string[]>([]);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [checkoutData, setCheckoutData] = useState<CheckoutFormData>({
     name: user?.name || '',
@@ -60,7 +68,7 @@ export default function Premium({ user }: { user: User | null }) {
     billingAddress: '',
     city: '',
     state: '',
-    zipCode: '',
+    zipCode: ''
   });
   const { showNotification } = useNotification();
   
@@ -72,6 +80,16 @@ export default function Premium({ user }: { user: User | null }) {
     setTimeout(() => {
       document.getElementById('checkout-form')?.scrollIntoView({ behavior: 'smooth' });
     }, 100);
+  };
+  
+  const toggleAddon = (addonName: string) => {
+    setSelectedAddons(prev => {
+      if (prev.includes(addonName)) {
+        return prev.filter(a => a !== addonName);
+      } else {
+        return [...prev, addonName];
+      }
+    });
   };
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -104,6 +122,26 @@ export default function Premium({ user }: { user: User | null }) {
     });
   };
   
+  const calculateTotal = () => {
+    if (!selectedPlan) return 0;
+    
+    // Get base plan price
+    const plan = pricingTiers.find(tier => tier.name === selectedPlan);
+    let total = plan ? (billingCycle === 'monthly' ? plan.price.monthly : plan.price.annually) : 0;
+    
+    // Add addon prices
+    selectedAddons.forEach(addonName => {
+      const addon = addons.find(a => a.name === addonName);
+      if (addon) {
+        // Apply annual discount if on annual billing
+        const addonPrice = billingCycle === 'annually' ? addon.price * 12 * 0.8 : addon.price;
+        total += addonPrice;
+      }
+    });
+    
+    return total;
+  };
+  
   const handleCheckoutSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Make sure we prevent multiple submissions
@@ -128,6 +166,7 @@ export default function Premium({ user }: { user: User | null }) {
     // Debug log
     console.log('Submitting checkout:', {
       selectedPlan,
+      selectedAddons,
       billingCycle,
       checkoutData
     });
@@ -141,12 +180,15 @@ export default function Premium({ user }: { user: User | null }) {
         // In a real app, this would save to the database
         // Here we'll simulate it with localStorage
         if (typeof window !== 'undefined') {
-          localStorage.setItem('userSubscription', JSON.stringify({
+          const subscription: Subscription = {
             plan: selectedPlan,
             billingCycle: billingCycle,
+            addons: selectedAddons,
             startDate: new Date().toISOString(),
             status: 'active'
-          }));
+          };
+          
+          localStorage.setItem('userSubscription', JSON.stringify(subscription));
         }
         
         // Show success notification
@@ -169,6 +211,9 @@ export default function Premium({ user }: { user: User | null }) {
           state: '',
           zipCode: '',
         });
+        
+        // Reset selected addons
+        setSelectedAddons([]);
 
         // Redirect to dashboard after successful purchase
         setTimeout(() => {
@@ -189,8 +234,7 @@ export default function Premium({ user }: { user: User | null }) {
   const pricingTiers: PricingTier[] = [
     {
       name: 'Basic',
-      price: '$29',
-      annualPrice: '$278',
+      price: { monthly: 29, annually: 278 },
       description: 'Perfect for independent agents',
       features: [
         '20 listings per month',
@@ -201,13 +245,11 @@ export default function Premium({ user }: { user: User | null }) {
         'Email templates',
         'PDF downloads',
       ],
-      buttonText: 'Get Started',
-      buttonLink: '/checkout?plan=basic',
+      cta: 'Get Started',
     },
     {
       name: 'Pro',
-      price: '$59',
-      annualPrice: '$566',
+      price: { monthly: 59, annually: 566 },
       description: 'For growing real estate professionals',
       features: [
         '50 listings per month',
@@ -220,14 +262,12 @@ export default function Premium({ user }: { user: User | null }) {
         'PDF and Word downloads',
         'Priority support',
       ],
-      buttonText: 'Subscribe Now',
-      buttonLink: '/checkout?plan=pro',
-      highlighted: true,
+      cta: 'Subscribe Now',
+      highlight: true,
     },
     {
       name: 'Business',
-      price: '$99',
-      annualPrice: '$950',
+      price: { monthly: 99, annually: 950 },
       description: 'For teams and high-volume agents',
       features: [
         'Unlimited listings',
@@ -242,36 +282,35 @@ export default function Premium({ user }: { user: User | null }) {
         'Listing analytics dashboard',
         'Team member accounts (3)',
       ],
-      buttonText: 'Go Business',
-      buttonLink: '/checkout?plan=business',
+      cta: 'Go Business',
     },
   ];
 
-  const addOns = [
+  const addons: Addon[] = [
     {
-      name: 'Market Analysis',
-      description: 'Get detailed market insights and pricing suggestions for your listings',
-      price: '$19/month',
+      id: "market-analysis",
+      name: "Market Analysis Add-on",
+      price: 19,
+      description: "Get detailed market analysis for your listings area",
       features: [
-        'Comparative market analysis',
-        'Local market trends',
-        'Pricing suggestions',
-        'Neighborhood statistics',
-        'School ratings integration',
-      ],
+        "Comparable property analysis",
+        "Local market trends",
+        "Price prediction",
+        "Demographic insights"
+      ]
     },
     {
-      name: 'AI Copywriting Assistant',
-      description: 'Expand your marketing toolkit with additional AI copywriting features',
-      price: '$15/month',
+      id: "ai-copywriter",
+      name: "AI Copywriting Assistant Add-on",
+      price: 15,
+      description: "AI-powered writing assistant for all your real estate content",
       features: [
-        'Property story narratives',
-        'Buyer persona targeting',
-        'First-person property walkthroughs',
-        'Seasonal listing updates',
-        'Custom tone and voice adjustments',
-      ],
-    },
+        "Email templates",
+        "Social media posts",
+        "Blog content generation",
+        "Property feature highlights"
+      ]
+    }
   ];
 
   const testimonials: Testimonial[] = [
@@ -336,21 +375,21 @@ export default function Premium({ user }: { user: User | null }) {
             <div 
               key={tier.name}
               className={`rounded-lg overflow-hidden ${
-                tier.highlighted 
+                tier.highlight 
                   ? 'ring-2 ring-[#2F5DE3] shadow-lg relative' 
                   : 'border border-gray-200 shadow-sm'
               }`}
             >
-              {tier.highlighted && (
+              {tier.highlight && (
                 <div className="absolute top-0 right-0 bg-[#2F5DE3] text-white px-3 py-1 text-sm font-medium rounded-bl-lg">
                   Most Popular
                 </div>
               )}
-              <div className={`p-6 ${tier.highlighted ? 'bg-[#C7BAF5] bg-opacity-20' : 'bg-white'}`}>
+              <div className={`p-6 ${tier.highlight ? 'bg-[#C7BAF5] bg-opacity-20' : 'bg-white'}`}>
                 <h3 className="text-2xl font-bold">{tier.name}</h3>
                 <p className="mt-4 flex items-baseline">
                   <span className="text-4xl font-extrabold">
-                    {billingCycle === 'monthly' ? tier.price : tier.annualPrice}
+                    {billingCycle === 'monthly' ? `$${tier.price.monthly}` : `$${tier.price.annually}`}
                   </span>
                   <span className="ml-1 text-gray-500">/{billingCycle === 'monthly' ? 'month' : 'year'}</span>
                 </p>
@@ -369,12 +408,12 @@ export default function Premium({ user }: { user: User | null }) {
                   <button
                     onClick={() => handleCheckoutOpen(tier.name)}
                     className={`block w-full text-center py-3 px-4 rounded-md font-medium ${
-                      tier.highlighted
+                      tier.highlight
                         ? 'bg-[#2F5DE3] text-white hover:bg-opacity-90'
                         : 'bg-white text-[#2F5DE3] border border-[#2F5DE3] hover:bg-indigo-50'
                     }`}
                   >
-                    {tier.buttonText}
+                    {tier.cta}
                   </button>
                 </div>
               </div>
@@ -416,8 +455,8 @@ export default function Premium({ user }: { user: User | null }) {
         <div className="max-w-6xl mx-auto mb-16">
           <h2 className="text-2xl font-bold mb-8 text-center">Power Up Your Listings with Add-Ons</h2>
           <div className="grid md:grid-cols-2 gap-8">
-            {addOns.map((addon) => (
-              <div key={addon.name} className="border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+            {addons.map((addon) => (
+              <div key={addon.id} className="border border-gray-200 rounded-lg overflow-hidden shadow-sm">
                 <div className="p-6 bg-white border-b border-gray-200">
                   <div className="flex items-center mb-2">
                     {addon.name === 'Market Analysis' ? (
@@ -428,7 +467,7 @@ export default function Premium({ user }: { user: User | null }) {
                     <h3 className="text-xl font-bold">{addon.name}</h3>
                   </div>
                   <p className="text-gray-600">{addon.description}</p>
-                  <p className="mt-4 font-bold text-xl">{addon.price}</p>
+                  <p className="mt-4 font-bold text-xl">${addon.price}{billingCycle === 'monthly' ? '/mo' : ' x 12mo (20% off)'}</p>
                 </div>
                 <div className="px-6 py-4 bg-white">
                   <ul className="space-y-3">
@@ -441,10 +480,10 @@ export default function Premium({ user }: { user: User | null }) {
                   </ul>
                   <div className="mt-6">
                     <button
-                      onClick={() => handleCheckoutOpen(`${addon.name} Add-on`)}
+                      onClick={() => toggleAddon(addon.name)}
                       className="block w-full text-center py-2 px-4 rounded-md font-medium bg-white text-[#2F5DE3] border border-[#2F5DE3] hover:bg-indigo-50"
                     >
-                      Add to Subscription
+                      {selectedAddons.includes(addon.name) ? 'Remove' : 'Add to Subscription'}
                     </button>
                   </div>
                 </div>
@@ -468,6 +507,33 @@ export default function Premium({ user }: { user: User | null }) {
               <p className="text-gray-600">
                 {billingCycle === 'annually' ? 'Annual billing' : 'Monthly billing'}
               </p>
+              
+              {/* Add section for selected addons */}
+              {selectedAddons.length > 0 && (
+                <div className="mt-2">
+                  <p className="font-medium">Add-ons:</p>
+                  <ul className="text-sm text-gray-600">
+                    {selectedAddons.map(addon => (
+                      <li key={addon} className="flex justify-between">
+                        <span>{addon}</span>
+                        <span>
+                          {addons.find(a => a.name === addon)?.price && 
+                            `$${addons.find(a => a.name === addon)?.price}${billingCycle === 'monthly' ? '/mo' : ' x 12mo (20% off)'}`
+                          }
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              
+              {/* Show total price */}
+              <div className="mt-3 border-t pt-2">
+                <p className="flex justify-between font-bold">
+                  <span>Total:</span>
+                  <span>${calculateTotal()}{billingCycle === 'monthly' ? '/month' : '/year'}</span>
+                </p>
+              </div>
             </div>
             
             <form onSubmit={handleCheckoutSubmit}>

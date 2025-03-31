@@ -1,22 +1,59 @@
-import { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
-import { User, Mail, Key, CreditCard, Save } from 'lucide-react'
+import { User, Mail, Key, CreditCard, Save, Package, CheckCheck, X } from 'lucide-react'
 import Layout from '@/components/Layout'
 import { GetServerSideProps } from 'next'
 import { requireAuth, getUserFromRequest } from '@/lib/auth'
+import { Subscription, getUserFeatures, Feature } from '@/lib/utils'
 
-export default function Account({ user }) {
+interface User {
+  id: string
+  name: string
+  email: string
+  role: string
+  company?: string
+  phone?: string
+}
+
+interface AccountFormData {
+  name: string
+  email: string
+  company: string
+  phone: string
+  currentPassword: string
+  newPassword: string
+  confirmPassword: string
+}
+
+export default function Account({ user }: { user: User | null }) {
   const router = useRouter()
-  const [saving, setSaving] = useState(false)
-  const [formData, setFormData] = useState({
-    name: user?.name || 'John Smith',
-    email: user?.email || 'john.smith@example.com',
-    company: 'Smith Realty',
-    phone: '(555) 123-4567',
+  const [isSaving, setIsSaving] = useState(false)
+  const [subscription, setSubscription] = useState<Subscription | null>(null)
+  const [features, setFeatures] = useState<Record<string, Feature>>({})
+  const [formData, setFormData] = useState<AccountFormData>({
+    name: user?.name || '',
+    email: user?.email || '',
+    company: user?.company || '',
+    phone: user?.phone || '',
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
   })
+
+  // Load subscription data on component mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedSubscription = localStorage.getItem('userSubscription')
+      if (savedSubscription) {
+        const parsedSubscription = JSON.parse(savedSubscription)
+        setSubscription(parsedSubscription)
+        
+        // Get features based on subscription
+        const userFeatures = getUserFeatures(parsedSubscription)
+        setFeatures(userFeatures)
+      }
+    }
+  }, [])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -26,74 +63,163 @@ export default function Account({ user }) {
     }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setSaving(true)
+    setIsSaving(true)
     
-    // Simulate API call
+    // Simulate API call with timeout
     setTimeout(() => {
-      setSaving(false)
-      // Show success toast or notification here
-      alert('Profile updated successfully')
-    }, 1500)
+      // In a real app, this would update the user profile via API
+      console.log('Saving profile data:', formData)
+      setIsSaving(false)
+      
+      // Show success message
+      alert('Profile updated successfully!')
+    }, 1000)
+  }
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+  }
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+  }
+
+  const cancelSubscription = () => {
+    if (confirm('Are you sure you want to cancel your subscription? You will lose access to premium features at the end of your billing cycle.')) {
+      // In a real app, this would make an API call to cancel the subscription
+      
+      // For the demo, we'll update the status in localStorage
+      if (subscription && typeof window !== 'undefined') {
+        const updatedSubscription = {
+          ...subscription,
+          status: 'cancelled'
+        }
+        localStorage.setItem('userSubscription', JSON.stringify(updatedSubscription))
+        setSubscription(updatedSubscription)
+      }
+      
+      alert('Your subscription has been cancelled. It will remain active until the end of the current billing period.')
+    }
   }
 
   return (
-    <Layout hideHeader={true}>
-      <div className="container mx-auto py-8 px-4">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Account Settings</h1>
-          <div className="flex items-center">
-            <span className="font-medium mr-3">Trial - 2 listings remaining</span>
-            <button 
-              onClick={() => router.push('/premium')}
-              className="px-3 py-1 rounded-md bg-[#2F5DE3] text-white text-sm"
-            >
-              Upgrade
-            </button>
-          </div>
-        </div>
+    <Layout hideHeader={false}>
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-8">Account Settings</h1>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Sidebar */}
           <div className="md:col-span-1">
             <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex flex-col items-center mb-6">
-                <div className="w-24 h-24 rounded-full bg-[#C7BAF5] flex items-center justify-center text-[#2F5DE3] text-2xl font-bold mb-4">
-                  {formData.name.split(' ').map(n => n[0]).join('')}
+              <div className="text-center mb-6">
+                <div className="h-24 w-24 rounded-full bg-blue-600 text-white flex items-center justify-center text-2xl font-bold mx-auto mb-4">
+                  {user?.name ? getInitials(user.name) : 'U'}
                 </div>
-                <h2 className="text-xl font-semibold">{formData.name}</h2>
-                <p className="text-gray-500">{formData.email}</p>
+                <h2 className="text-xl font-bold">{user?.name || 'User'}</h2>
+                <p className="text-gray-600">{user?.email || 'user@example.com'}</p>
               </div>
               
               <div className="border-t pt-4">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium">Subscription Plan</span>
-                  <span className="text-sm bg-[#C7BAF5] bg-opacity-20 text-[#2F5DE3] px-2 py-1 rounded-full">
-                    Free Trial
-                  </span>
-                </div>
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium">Listings Remaining</span>
-                  <span className="text-sm">2</span>
-                </div>
-                <div className="mt-4">
-                  <button 
-                    onClick={() => router.push('/premium')}
-                    className="w-full bg-[#2F5DE3] text-white py-2 rounded-md hover:bg-opacity-90 transition"
-                  >
-                    Upgrade Plan
-                  </button>
-                </div>
+                <h3 className="font-medium mb-2">Subscription</h3>
+                {subscription ? (
+                  <div>
+                    <div className={`rounded-md p-2 mb-2 ${
+                      subscription.status === 'active' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'
+                    }`}>
+                      <p className="font-medium">{subscription.plan} Plan</p>
+                      <p className="text-sm">
+                        Status: {subscription.status === 'active' ? 'Active' : 'Cancelled'}
+                      </p>
+                      <p className="text-sm">
+                        Started: {formatDate(subscription.startDate)}
+                      </p>
+                      <p className="text-sm">
+                        Billing: {subscription.billingCycle === 'monthly' ? 'Monthly' : 'Annual'}
+                      </p>
+                      
+                      {/* Show addons if any */}
+                      {subscription.addons && subscription.addons.length > 0 && (
+                        <div className="mt-2">
+                          <p className="text-sm font-medium">Add-ons:</p>
+                          <ul className="text-xs">
+                            {subscription.addons.map(addon => (
+                              <li key={addon} className="mt-1">• {addon}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="mt-4 space-y-2">
+                      {subscription.status === 'active' && (
+                        <button
+                          onClick={cancelSubscription}
+                          className="w-full py-2 px-3 border border-red-300 rounded-md text-red-600 text-sm font-medium hover:bg-red-50"
+                        >
+                          Cancel Subscription
+                        </button>
+                      )}
+                      
+                      <a
+                        href="/premium"
+                        className="block w-full py-2 px-3 text-center bg-blue-600 rounded-md text-white text-sm font-medium hover:bg-blue-700"
+                      >
+                        {subscription.status === 'active' ? 'Change Plan' : 'Reactivate Subscription'}
+                      </a>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-gray-600 mb-3">You are currently on the free trial.</p>
+                    <a
+                      href="/premium"
+                      className="block w-full py-2 px-3 text-center bg-blue-600 rounded-md text-white text-sm font-medium hover:bg-blue-700"
+                    >
+                      Upgrade Now
+                    </a>
+                  </div>
+                )}
               </div>
             </div>
+            
+            {/* Features section */}
+            {Object.keys(features).length > 0 && (
+              <div className="bg-white rounded-lg shadow p-6 mt-6">
+                <h3 className="font-medium mb-4">Your Features</h3>
+                <ul className="space-y-2">
+                  {Object.entries(features).map(([key, feature]) => (
+                    <li key={key} className="flex items-center text-sm">
+                      {feature.included ? (
+                        <CheckCheck className="h-4 w-4 text-green-500 mr-2" />
+                      ) : (
+                        <X className="h-4 w-4 text-gray-300 mr-2" />
+                      )}
+                      <span className={feature.included ? 'text-gray-900' : 'text-gray-400'}>
+                        {feature.name}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
           
           {/* Main content */}
           <div className="md:col-span-2">
             <div className="bg-white rounded-lg shadow overflow-hidden">
               <div className="px-6 py-4 border-b">
-                <h3 className="text-lg font-medium">Personal Information</h3>
+                <h2 className="text-xl font-bold">Personal Information</h2>
               </div>
               
               <form onSubmit={handleSubmit} className="p-6">
@@ -108,11 +234,12 @@ export default function Account({ user }) {
                       </div>
                       <input
                         type="text"
-                        name="name"
                         id="name"
+                        name="name"
                         value={formData.name}
                         onChange={handleChange}
-                        className="pl-10 shadow-sm focus:ring-[#2F5DE3] focus:border-[#2F5DE3] block w-full sm:text-sm border-gray-300 rounded-md"
+                        className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md"
+                        placeholder="John Doe"
                       />
                     </div>
                   </div>
@@ -127,26 +254,28 @@ export default function Account({ user }) {
                       </div>
                       <input
                         type="email"
-                        name="email"
                         id="email"
+                        name="email"
                         value={formData.email}
                         onChange={handleChange}
-                        className="pl-10 shadow-sm focus:ring-[#2F5DE3] focus:border-[#2F5DE3] block w-full sm:text-sm border-gray-300 rounded-md"
+                        className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md"
+                        placeholder="john@example.com"
                       />
                     </div>
                   </div>
                   
                   <div>
                     <label htmlFor="company" className="block text-sm font-medium text-gray-700 mb-1">
-                      Company / Brokerage
+                      Company/Brokerage
                     </label>
                     <input
                       type="text"
-                      name="company"
                       id="company"
+                      name="company"
                       value={formData.company}
                       onChange={handleChange}
-                      className="shadow-sm focus:ring-[#2F5DE3] focus:border-[#2F5DE3] block w-full sm:text-sm border-gray-300 rounded-md"
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-md"
+                      placeholder="Your company"
                     />
                   </div>
                   
@@ -155,12 +284,13 @@ export default function Account({ user }) {
                       Phone Number
                     </label>
                     <input
-                      type="text"
-                      name="phone"
+                      type="tel"
                       id="phone"
+                      name="phone"
                       value={formData.phone}
                       onChange={handleChange}
-                      className="shadow-sm focus:ring-[#2F5DE3] focus:border-[#2F5DE3] block w-full sm:text-sm border-gray-300 rounded-md"
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-md"
+                      placeholder="(123) 456-7890"
                     />
                   </div>
                 </div>
@@ -179,11 +309,12 @@ export default function Account({ user }) {
                         </div>
                         <input
                           type="password"
-                          name="currentPassword"
                           id="currentPassword"
+                          name="currentPassword"
                           value={formData.currentPassword}
                           onChange={handleChange}
-                          className="pl-10 shadow-sm focus:ring-[#2F5DE3] focus:border-[#2F5DE3] block w-full sm:text-sm border-gray-300 rounded-md"
+                          className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md"
+                          placeholder="••••••••"
                         />
                       </div>
                     </div>
@@ -195,11 +326,12 @@ export default function Account({ user }) {
                         </label>
                         <input
                           type="password"
-                          name="newPassword"
                           id="newPassword"
+                          name="newPassword"
                           value={formData.newPassword}
                           onChange={handleChange}
-                          className="shadow-sm focus:ring-[#2F5DE3] focus:border-[#2F5DE3] block w-full sm:text-sm border-gray-300 rounded-md"
+                          className="block w-full px-3 py-2 border border-gray-300 rounded-md"
+                          placeholder="••••••••"
                         />
                       </div>
                       
@@ -209,54 +341,29 @@ export default function Account({ user }) {
                         </label>
                         <input
                           type="password"
-                          name="confirmPassword"
                           id="confirmPassword"
+                          name="confirmPassword"
                           value={formData.confirmPassword}
                           onChange={handleChange}
-                          className="shadow-sm focus:ring-[#2F5DE3] focus:border-[#2F5DE3] block w-full sm:text-sm border-gray-300 rounded-md"
+                          className="block w-full px-3 py-2 border border-gray-300 rounded-md"
+                          placeholder="••••••••"
                         />
                       </div>
                     </div>
                   </div>
                 </div>
                 
-                <div className="border-t pt-6 mt-6">
-                  <h3 className="text-lg font-medium mb-4">Billing Information</h3>
-                  
-                  <div className="bg-gray-50 p-4 rounded-md mb-6">
-                    <div className="flex items-center">
-                      <CreditCard className="h-8 w-8 text-gray-400 mr-3" />
-                      <div>
-                        <p className="font-medium">No payment method on file</p>
-                        <p className="text-sm text-gray-500">Add a payment method to upgrade your plan</p>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      className="mt-3 inline-flex items-center px-4 py-2 border border-[#2F5DE3] text-sm font-medium rounded-md text-[#2F5DE3] bg-white hover:bg-[#C7BAF5] hover:bg-opacity-10 focus:outline-none"
-                    >
-                      Add Payment Method
-                    </button>
-                  </div>
-                </div>
-                
-                <div className="flex justify-end mt-6">
+                <div className="mt-6 flex justify-end">
                   <button
                     type="submit"
-                    disabled={saving}
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#2F5DE3] hover:bg-opacity-90 focus:outline-none"
+                    disabled={isSaving}
+                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
                   >
-                    {saving ? (
-                      <>
-                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Saving...
-                      </>
+                    {isSaving ? (
+                      <>Saving...</>
                     ) : (
                       <>
-                        <Save className="h-4 w-4 mr-2" />
+                        <Save className="h-5 w-5 mr-2" />
                         Save Changes
                       </>
                     )}
