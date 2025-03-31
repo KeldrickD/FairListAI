@@ -39,7 +39,14 @@ interface CheckoutFormData {
   zipCode: string;
 }
 
-export default function Premium({ user }) {
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
+export default function Premium({ user }: { user: User | null }) {
   const router = useRouter();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annually'>('monthly');
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
@@ -99,8 +106,16 @@ export default function Premium({ user }) {
   
   const handleCheckoutSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, this would integrate with a payment processor
-    // For now, we'll simulate a successful purchase
+    // Make sure we prevent multiple submissions
+    if (!selectedPlan) {
+      showNotification({
+        type: 'error',
+        title: 'Error',
+        message: 'Please select a plan before proceeding.',
+        duration: 3000
+      });
+      return;
+    }
 
     // Show loading state
     showNotification({
@@ -110,36 +125,53 @@ export default function Premium({ user }) {
       duration: 3000
     });
 
+    // Debug log
+    console.log('Submitting checkout:', {
+      selectedPlan,
+      billingCycle,
+      checkoutData
+    });
+
     // Simulate API call with timeout
     setTimeout(() => {
-      // Close checkout form
-      setIsCheckoutOpen(false);
-      
-      // Show success notification
-      showNotification({
-        type: 'success',
-        title: 'Subscription Activated!',
-        message: `Your ${selectedPlan} plan has been successfully activated.`,
-        duration: 5000
-      });
+      try {
+        // Close checkout form
+        setIsCheckoutOpen(false);
+        
+        // Show success notification
+        showNotification({
+          type: 'success',
+          title: 'Subscription Activated!',
+          message: `Your ${selectedPlan} plan has been successfully activated.`,
+          duration: 5000
+        });
 
-      // Reset form
-      setCheckoutData({
-        name: user?.name || '',
-        cardNumber: '',
-        expiryDate: '',
-        cvv: '',
-        couponCode: '',
-        billingAddress: '',
-        city: '',
-        state: '',
-        zipCode: '',
-      });
+        // Reset form
+        setCheckoutData({
+          name: user?.name || '',
+          cardNumber: '',
+          expiryDate: '',
+          cvv: '',
+          couponCode: '',
+          billingAddress: '',
+          city: '',
+          state: '',
+          zipCode: '',
+        });
 
-      // Redirect to dashboard after successful purchase
-      setTimeout(() => {
-        router.push('/dashboard');
-      }, 2000);
+        // Redirect to dashboard after successful purchase
+        setTimeout(() => {
+          router.push('/dashboard');
+        }, 2000);
+      } catch (error) {
+        console.error('Checkout error:', error);
+        showNotification({
+          type: 'error',
+          title: 'Checkout Failed',
+          message: 'There was an error processing your payment. Please try again.',
+          duration: 5000
+        });
+      }
     }, 3000);
   };
   
@@ -411,7 +443,7 @@ export default function Premium({ user }) {
         </div>
 
         {/* Checkout Form */}
-        <div className={`fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center ${isCheckoutOpen ? 'block' : 'hidden'}`}>
+        <div className={`fixed inset-0 bg-black bg-opacity-50 z-50 ${isCheckoutOpen ? 'flex' : 'hidden'} items-center justify-center`}>
           <div className="bg-white rounded-lg p-8 max-w-md w-full">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-bold">Complete Your Purchase</h3>
@@ -423,7 +455,7 @@ export default function Premium({ user }) {
             <div className="mb-6">
               <p className="font-medium">Selected Plan: <span className="text-blue-600">{selectedPlan}</span></p>
               <p className="text-gray-600">
-                {billingCycle === 'annual' ? 'Annual billing' : 'Monthly billing'}
+                {billingCycle === 'annually' ? 'Annual billing' : 'Monthly billing'}
               </p>
             </div>
             
