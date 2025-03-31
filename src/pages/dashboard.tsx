@@ -5,6 +5,7 @@ import { getUserListings, deleteListing, ListingItem } from '@/lib/services/list
 import { useToast } from '@/components/ui/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tutorial } from '@/components/ui/Tutorial';
+import { requireAuth } from '@/lib/auth';
 
 export default function Dashboard() {
   const [listings, setListings] = useState<ListingItem[]>([]);
@@ -145,4 +146,18 @@ export default function Dashboard() {
       </div>
     </div>
   );
+}
+
+export const getServerSideProps = async (context) => {
+  const authResult = requireAuth(context);
+  
+  // If authentication check results in a redirect, return it
+  if ('redirect' in authResult) {
+    return authResult;
+  }
+  
+  // Otherwise, return the props
+  return {
+    props: {}
+  };
 } 

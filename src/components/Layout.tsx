@@ -22,6 +22,26 @@ export default function Layout({ children, hideNav = false, hideHeader = false }
   // Placeholder for user auth - in a real app this would check auth state
   const isLoggedIn = router.pathname !== '/login' && router.pathname !== '/register'
   
+  const handleLogout = async () => {
+    try {
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        // Redirect to login page after successful logout
+        router.push('/login');
+      } else {
+        console.error('Logout failed');
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+  
   // If navigation is hidden (e.g., on login/register pages)
   if (hideNav) {
     return (
@@ -143,7 +163,7 @@ export default function Layout({ children, hideNav = false, hideHeader = false }
           
           <div className="absolute bottom-0 left-0 right-0 p-4 border-t">
             <button 
-              onClick={() => router.push('/login')}
+              onClick={handleLogout}
               className="flex w-full items-center px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
             >
               <LogOut className="h-5 w-5 mr-3" />

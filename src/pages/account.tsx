@@ -2,13 +2,15 @@ import { useState } from 'react'
 import { useRouter } from 'next/router'
 import { User, Mail, Key, CreditCard, Save } from 'lucide-react'
 import Layout from '@/components/Layout'
+import { GetServerSideProps } from 'next'
+import { requireAuth, getUserFromRequest } from '@/lib/auth'
 
-export default function Account() {
+export default function Account({ user }) {
   const router = useRouter()
   const [saving, setSaving] = useState(false)
   const [formData, setFormData] = useState({
-    name: 'John Smith',
-    email: 'john.smith@example.com',
+    name: user?.name || 'John Smith',
+    email: user?.email || 'john.smith@example.com',
     company: 'Smith Realty',
     phone: '(555) 123-4567',
     currentPassword: '',
@@ -267,4 +269,23 @@ export default function Account() {
       </div>
     </Layout>
   )
+}
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  // Check if user is authenticated
+  const authResult = requireAuth(context);
+  
+  // If authentication check results in a redirect, return it
+  if ('redirect' in authResult) {
+    return authResult;
+  }
+  
+  // Get user info from the session
+  const user = getUserFromRequest(context.req);
+  
+  return {
+    props: {
+      user: user || null,
+    }
+  };
 } 
