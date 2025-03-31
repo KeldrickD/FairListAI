@@ -9,7 +9,6 @@ export function formatPrice(price: number): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
-    minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(price);
 }
@@ -17,9 +16,9 @@ export function formatPrice(price: number): string {
 export interface Subscription {
   plan: string;
   billingCycle: string;
-  addons: string[];
   startDate: string;
   status: string;
+  addons?: string[];
 }
 
 export interface Feature {
@@ -86,26 +85,83 @@ export function getAddonFeatures(addons: string[]): Record<string, Feature> {
   return addonFeatures;
 }
 
-export function getUserFeatures(subscription: Subscription | null): Record<string, Feature> {
-  if (!subscription) {
-    return {
-      "AI Property Descriptions": { name: "AI Property Descriptions", included: true },
-      "Fair Housing Compliance Check": { name: "Fair Housing Compliance Check", included: true },
-      "3 Listings (Trial)": { name: "3 Listings (Trial)", included: true }
-    };
+export function hasFeature(subscription: Subscription | null, featureName: string): boolean {
+  if (!subscription) return false;
+  
+  const planFeatures: Record<string, string[]> = {
+    'Basic': [
+      'Limited listings (5)',
+      'Basic AI descriptions',
+      'Standard analytics',
+      'Email support'
+    ],
+    'Pro': [
+      'Expanded listings (25)',
+      'Enhanced AI descriptions',
+      'Advanced analytics',
+      'Priority email support',
+      'Virtual staging',
+      'Premium SEO optimization'
+    ],
+    'Business': [
+      'Unlimited listings',
+      'Premium AI descriptions',
+      'Premium SEO optimization',
+      'Social media content calendar',
+      'White-label exports',
+      'Dedicated account manager',
+      'Team member accounts (3)',
+      'Advanced analytics',
+      'Priority support'
+    ]
+  };
+  
+  const planFeatureList = planFeatures[subscription.plan] || [];
+  if (planFeatureList.includes(featureName)) {
+    return true;
   }
   
-  const planFeatures = getPlanFeatures(subscription.plan);
+  if (subscription.addons && subscription.addons.includes(featureName)) {
+    return true;
+  }
   
-  const addonFeatures = getAddonFeatures(subscription.addons || []);
-  
-  return {
-    ...planFeatures,
-    ...addonFeatures
-  };
+  return false;
 }
 
-export function hasFeature(subscription: Subscription | null, featureName: string): boolean {
-  const features = getUserFeatures(subscription);
-  return features[featureName]?.included || false;
+export function getUserFeatures(subscription: Subscription | null): string[] {
+  if (!subscription) return [];
+  
+  const planFeatures: Record<string, string[]> = {
+    'Basic': [
+      'Limited listings (5)',
+      'Basic AI descriptions',
+      'Standard analytics',
+      'Email support'
+    ],
+    'Pro': [
+      'Expanded listings (25)',
+      'Enhanced AI descriptions',
+      'Advanced analytics',
+      'Priority email support',
+      'Virtual staging',
+      'Premium SEO optimization'
+    ],
+    'Business': [
+      'Unlimited listings',
+      'Premium AI descriptions',
+      'Premium SEO optimization',
+      'Social media content calendar',
+      'White-label exports',
+      'Dedicated account manager',
+      'Team member accounts (3)',
+      'Advanced analytics',
+      'Priority support'
+    ]
+  };
+  
+  const planFeatureList = planFeatures[subscription.plan] || [];
+  
+  const addons = subscription.addons || [];
+  
+  return [...planFeatureList, ...addons];
 } 

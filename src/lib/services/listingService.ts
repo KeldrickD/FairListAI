@@ -1,4 +1,5 @@
 import { apiRequest } from '@/lib/api';
+import { Subscription } from '../utils';
 
 export interface ListingItem {
   id: string;
@@ -21,6 +22,8 @@ export interface ListingItem {
   };
   hashtags?: string[];
   userId: string;
+  images?: string[];
+  status: 'draft' | 'published' | 'sold';
 }
 
 // Helper to get listings from localStorage
@@ -182,4 +185,76 @@ export async function updateListing(id: string, listing: Partial<ListingItem>): 
     console.error('Error updating listing:', error);
     throw error;
   }
-} 
+}
+
+// Check if user can create more listings based on subscription
+export const canCreateListing = (): boolean => {
+  if (typeof window === 'undefined') return true;
+  
+  const subscriptionJSON = localStorage.getItem('userSubscription');
+  const userListingsJSON = localStorage.getItem('userListings');
+  
+  // If no subscription, use free trial limit (3 listings)
+  if (!subscriptionJSON) {
+    const listings = userListingsJSON ? JSON.parse(userListingsJSON) : [];
+    return listings.length < 3;
+  }
+  
+  const subscription: Subscription = JSON.parse(subscriptionJSON);
+  const listings = userListingsJSON ? JSON.parse(userListingsJSON) : [];
+  const currentCount = listings.length;
+  
+  // Unlimited listings for Business plan
+  if (subscription.plan === 'Business') {
+    return true;
+  }
+  
+  // Pro plan: 50 listings
+  if (subscription.plan === 'Pro') {
+    return currentCount < 50;
+  }
+  
+  // Basic plan: 10 listings
+  if (subscription.plan === 'Basic') {
+    return currentCount < 10;
+  }
+  
+  // Default to free trial limit (3 listings)
+  return currentCount < 3;
+};
+
+// Get remaining listing count
+export const getRemainingListingCount = (): number | null => {
+  if (typeof window === 'undefined') return null;
+  
+  const subscriptionJSON = localStorage.getItem('userSubscription');
+  const userListingsJSON = localStorage.getItem('userListings');
+  
+  const listings = userListingsJSON ? JSON.parse(userListingsJSON) : [];
+  const currentCount = listings.length;
+  
+  // If no subscription, use free trial limit (3 listings)
+  if (!subscriptionJSON) {
+    return Math.max(0, 3 - currentCount);
+  }
+  
+  const subscription: Subscription = JSON.parse(subscriptionJSON);
+  
+  // Unlimited listings for Business plan
+  if (subscription.plan === 'Business') {
+    return null; // null indicates unlimited
+  }
+  
+  // Pro plan: 50 listings
+  if (subscription.plan === 'Pro') {
+    return Math.max(0, 50 - currentCount);
+  }
+  
+  // Basic plan: 10 listings
+  if (subscription.plan === 'Basic') {
+    return Math.max(0, 10 - currentCount);
+  }
+  
+  // Default to free trial limit (3 listings)
+  return Math.max(0, 3 - currentCount);
+}; 
